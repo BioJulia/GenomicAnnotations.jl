@@ -3,11 +3,12 @@ module GenomicAnnotations
 
 using DataFrames
 
-export Chromosome, Gene, AbstractGene
+export Chromosome, Gene, AbstractGene, GeneDataView
 export readgbk, genesequence, iscomplement, addgene!, printgbk
 export @genes
 
 include("types.jl")
+include("genedataview.jl")
 include("readgbk.jl")
 include("macro.jl")
 

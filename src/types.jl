@@ -83,6 +83,7 @@ function Base.delete!(genes::AbstractArray{Gene, 1})
 end
 
 
+#=
 function Base.getproperty(gene::G, name::Symbol) where {G <: AbstractGene}
     if name in fieldnames(G)
         return getfield(gene, name)
@@ -113,6 +114,12 @@ function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene
         gene.parent.genedata[gene.index, name] = x
     end
     return x
+end
+=#
+
+
+function Base.propertynames(gene::AbstractGene)
+    names(gene.parent.genedata)
 end
 
 
