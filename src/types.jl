@@ -39,7 +39,7 @@ end
 
 
 """
-    addgene!(chr::Chromosome, locus::Locus; kw...)
+    addgene!(chr::Chromosome, feature, locus::Locus; kw...)
 
 Add gene to `chr`.
 """
@@ -181,7 +181,7 @@ end
 Return genomic sequence for `gene`.
 """
 function genesequence(gene::AbstractGene)
-    gene.parent.sequence[gene.parent.genedata[gene.index, :position]]
+    gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]
 end
 
 
@@ -338,12 +338,16 @@ Base.copy(gene::AbstractGene) = deepcopy(gene)
 
 
 function Base.isless(l1::Locus, l2::Locus)
-    if (l1.position.start < l2.position.start) || (l1.position.start == l2.position.start && l1.position.stop >= l2.position.stop)
+    if (l1.position.start < l2.position.start) || (l1.position.start == l2.position.start && l1.position.stop > l2.position.stop)
         return true
     end
     return false
 end
-Base.isless(g1::Gene, g2::Gene) = g1.locus < g2.locus
+Base.isless(g1::Gene, g2::Gene) = ((g1.locus == g2.locus) && (g1.feature == "gene" && g2.feature != "gene")) || (g1.locus < g2.locus)
+
+function Base.:(==)(x::Locus, y::Locus)
+    (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.excluding == y.excluding)
+end
 
 
 function Base.sort!(G::AbstractArray{Gene}; args...)

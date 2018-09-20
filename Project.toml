@@ -1,0 +1,7 @@
+name = "GenomicAnnotations"
+uuid = "00d57c2a-bcd2-11e8-2d4f-9d9debe22f04"
+authors = ["Karl Dyrhage <karl.dyrhage@icm.uu.se>"]
+version = "0.1.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"

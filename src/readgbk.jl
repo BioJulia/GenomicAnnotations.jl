@@ -124,6 +124,7 @@ function parsechromosome(lines)
                         (qualifier, content) = match(r"^ +/(\S+)=(\S+)$", line).captures
                         try
                             content = Meta.parse(content)
+                            content isa Expr && throw(Meta.ParseError)
                         catch
                             content = Symbol(content)
                         end

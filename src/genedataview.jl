@@ -63,20 +63,10 @@ function Base.getindex(gv::GeneDataView, I::AbstractArray)
         return fill(missing, length(gv))
     end
 end
-Base.setindex!(gv::GeneDataView, v, i::Int) = setindex!(gv.parent.genedata, v, i)
-Base.setindex!(gv::GeneDataView, v, I::Vararg{Int, N}) where N = setindex!(gv.parent.genedata, v, i)
+Base.setindex!(gv::GeneDataView, v, i::Int) = setindex!(gv.parent.genedata[gv.property], v, i)
+Base.setindex!(gv::GeneDataView, v, I::Vararg{Int, N}) where N = setindex!(gv.parent.genedata[gv.property], v, i)
 
 
 ### Broadcast
 
-struct GeneDataViewStyle <: Broadcast.AbstractArrayStyle{1} end
-Base.BroadcastStyle(::Type{GeneDataView}) = GeneDataViewStyle()
-
-# function Base.similar(bc::Broadcast.Broadcasted{Broadcast.GeneDataView}, ::Type{ElType}) where ElType
-# end
-
-function Base.copyto!(dest::GeneDataView, bc)
-    for i in eachindex(bc.f)
-        setproperty!(bc.f.parent,
-    end
-end
+#Base.broadcast_setindex!()
