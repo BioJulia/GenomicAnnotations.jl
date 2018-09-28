@@ -4,4 +4,5 @@ authors = ["Karl Dyrhage <karl.dyrhage@icm.uu.se>"]
 version = "0.1.0"
 
 [deps]
+BioSequences = "7e6ae17a-c86d-528c-b3b9-7f778a29fe59"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
