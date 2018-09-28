@@ -176,6 +176,21 @@ end
 
 
 """
+    get(g::Gene, key, default)
+
+Retrieve `key` from `g`. If `key` is missing, return `default`.
+"""
+function Base.get(g::Gene, key, default)
+    p = getproperty(g, key)
+    if ismissing(p)
+        return default
+    else
+        return p
+    end
+end
+
+
+"""
     genesequence(gene::AbstractGene)
 
 Return genomic sequence for `gene`.

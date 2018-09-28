@@ -31,9 +31,11 @@ end
 
 
 function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
-    @assert all(getfield.(genes, :parent) .== Ref(getfield(genes[1], :parent))) "Not all members of `genes` come from the same parent"
-    if name in fieldnames(G)
-        return getfield.(genes, name)
+    # @assert all(getfield.(genes, :parent) .== Ref(getfield(genes[1], :parent))) "Not all members of `genes` come from the same parent"
+    if name == :index
+        return [getfield(g, :index) for g in genes]
+    elseif name == :parent
+        return getfield(genes[1], name)
     else
         return GeneDataView(genes[1].parent, genes.index, name)
     end
