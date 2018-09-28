@@ -15,6 +15,9 @@ end
 
 
 Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[])
+Locus(position::UnitRange{Int}) = Locus(position, '.', true, true, UnitRange{Int}[])
+Locus(position::UnitRange{Int}, strand::Char) = Locus(position, strand, true, true, UnitRange{Int}[])
+Locus(position::UnitRange{Int}, strand::Char, complete_left, complete_right) = Locus(position, strand, complete_left, complete_right, UnitRange{Int}[])
 
 
 mutable struct Chromosome{G <: AbstractGene}

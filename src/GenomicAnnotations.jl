@@ -3,7 +3,7 @@ module GenomicAnnotations
 
 using DataFrames
 
-export Chromosome, Gene, AbstractGene, GeneDataView
+export Chromosome, Gene, AbstractGene, GeneDataView, Locus
 export readgbk, genesequence, iscomplement, addgene!, printgbk
 export @genes
 

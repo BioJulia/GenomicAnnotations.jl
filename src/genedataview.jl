@@ -19,15 +19,6 @@ end
 function Base.getproperty(gv::GeneDataView{G}, name::Symbol) where {G <: AbstractGene}
     return getfield(gv, name)
 end
-# function Base.getproperty(gv::GeneDataView{G}, name::Symbol) where {G <: AbstractGene}
-#     if name in fieldnames(G)
-#         return getfield.(gv.parent.genes[gv.indices])
-#     elseif name in names(gv.parent.genedata)
-#         return gv.parent.genedata[gv.indices, name]
-#     else
-#         return fill(missing, size(gv))
-#     end
-# end
 
 
 function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
@@ -67,8 +58,3 @@ function Base.getindex(gv::GeneDataView, I::AbstractArray)
 end
 Base.setindex!(gv::GeneDataView, v, i::Int) = setindex!(gv.parent.genedata[gv.property], v, i)
 Base.setindex!(gv::GeneDataView, v, I::Vararg{Int, N}) where N = setindex!(gv.parent.genedata[gv.property], v, i)
-
-
-### Broadcast
-
-#Base.broadcast_setindex!()
