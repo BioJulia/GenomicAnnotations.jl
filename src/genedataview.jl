@@ -44,6 +44,14 @@ function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene
     return x
 end
 
+# TODO: Make this better. This is just meant as a quick fix, in the future it
+# should be using broadcast.
+function Base.setproperty!(genes::AbstractArray{G, 1}, name::Symbol, x::T) where {G <: AbstractGene, T}
+    for g in genes
+        setproperty!(g, name, x)
+    end
+end
+
 
 ### AbstractArray functions
 Base.size(gv::GeneDataView) = size(gv.indices)
