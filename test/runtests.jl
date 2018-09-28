@@ -1,4 +1,5 @@
 using GenomicAnnotations
+using BioSequences
 using Test
 
 @testset "GenomicAnnotations" begin
@@ -46,7 +47,7 @@ using Test
         @test chr.genes[2].locus == chr.genes[2].locus
     end
 
-    seq = "atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"
+    seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"
     @test genesequence(chr.genes[2]) == seq
     @test length(chr.genes[2]) == length(seq)
 end

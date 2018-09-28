@@ -4,14 +4,6 @@ function parseheader(header::String)
     return locus
 end
 
-# function parseposition(line::String)
-#     feature, position = split(strip(line), r" +")
-#     complement = occursin("complement", position)::Bool
-#     complete = !occursin(r"[<>]", position)::Bool
-#     position = parse.(Int, filter.(c->isnumeric(c), split(position, r"\.\.(.*\.\.)?")))
-#     return (feature, position[1]:position[2], complement, complete)
-# end
-
 
 """
 Parse lines encoding genomic position, returning the feature as a `String`, and an instance of `Locus`.
@@ -50,7 +42,6 @@ Parse and return one chromosome entry, and the line number that it ends at.
 """
 function parsechromosome(lines)
     genes = Gene[]
-    # genomename = basename(filename)[1:(end-4)]
     iobuffer = IOBuffer()
 	isheader = true
     isfooter = false
@@ -66,9 +57,6 @@ function parsechromosome(lines)
     chromosome = Chromosome()
 
     linecount = 0
-	# fstream = open(filename)
-    # @assert eof(fstream) == false
-	# for line in eachline(fstream)
     for line in lines
         linecount += 1
 
@@ -134,7 +122,6 @@ function parsechromosome(lines)
                         spanning = true
                     end
 
-                    # Base.setproperty!(chromosome.genes[end], Symbol(qualifier), content)
                     pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
 
                 else
@@ -170,7 +157,7 @@ function parsechromosome(lines)
         end
     end
     chromosome.name = parseheader(header)
-    chromosome.sequence = filterseq(iobuffer)
+    chromosome.sequence = DNASequence(filterseq(iobuffer))
     chromosome.header = header
     return linecount, chromosome
 end
@@ -181,7 +168,7 @@ end
 
 Parse GenBank-formatted file `filename`, returning a `Chromosome`.
 """
-function readgbk(filename::String = "/seq/LAB/kunkeei_genomes_new/genbanks/with_rRNAs/A00901.gbk")
+function readgbk(filename)
     finished = false
     chrs = Chromosome[]
     lines = readlines(filename)
