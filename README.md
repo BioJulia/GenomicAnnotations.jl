@@ -1,7 +1,7 @@
 # GenomicAnnotations.jl
 
 ## Description
-GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format. The aim is to provide a user-friendly
+GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format.
 
 ## Usage
 GenBank files are read with `readgbk(gbkfile)`. `readgbk(gbkfile)` returns a vector of `Chromosome`s, but since `example.gbk` only contains one we only need to store the first element.
@@ -30,7 +30,7 @@ if get(chr.genes[2], :pseudo, false)
 end
 ```
 
-The macro `@genes` can be used to filter through the annotations. The keyword `gene` can be used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
+The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```
 @genes(chr, :feature == "CDS")
 @genes(chr, length(gene) > 300)
@@ -43,7 +43,7 @@ The macro `@genes` can be used to filter through the annotations. The keyword `g
 delete!(@genes(chr, :pseudo))
 ```
 
-After modifying the annotations, `printgbk(io, chr)` can be used to write it to a file.
+After modifying the annotations, `printgbk(io, chr)` can be used to write them to a file.
 ```
 open("updated.gbk", "w") do f
     printgbk(f, chr)
