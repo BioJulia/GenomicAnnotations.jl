@@ -48,14 +48,18 @@ end
 Base.size(gv::GeneDataView) = size(gv.indices)
 Base.getindex(gv::GeneDataView, i::Int) = getproperty(gv.parent.genes[gv.indices[i]], gv.property)
 Base.getindex(gv::GeneDataView, I::AbstractArray) = GeneDataView(gv.parent, gv.indices[I], gv.property)
-Base.setindex!(gv::GeneDataView, v, i::Int) = (setindex!(gv.parent.genedata[gv.property], v, gv.indices[i]); gv)
+Base.setindex!(gv::GeneDataView, v, i::Int) = (Base.setproperty!(gv.parent.genes[i], gv.property, v))
 Base.similar(gv::GeneDataView{Gene}) = GeneDataView(gv.parent, gv.indices, gv.property)
 Base.copy(gv::GeneDataView{Gene}) = GeneDataView(gv.parent, gv.indices, gv.property)
 Base.view(gv::GeneDataView{Gene}, I) = GeneDataView(gv.parent, gv.indices[I], gv.property)
 
 
 function Base.fill!(gv::GeneDataView{Gene}, x)
-    xT = convert(eltype(gv.parent.genedata[gv.property]), x)
+    if haskey(gv.parent.genedata, gv.property)
+        xT = convert(eltype(gv.parent.genedata[gv.property]), x)
+    else
+        xT = x
+    end
     for I in eachindex(gv)
         @inbounds gv[I] = x
     end
