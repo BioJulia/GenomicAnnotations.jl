@@ -5,12 +5,12 @@ GenomicAnnotations is a package for reading, modifying, and writing genomic anno
 
 ## Usage
 GenBank files are read with `readgbk(gbkfile)`. `readgbk(gbkfile)` returns a vector of `Chromosome`s, but since `example.gbk` only contains one we only need to store the first element.
-```
+```julia
 chr = readgbk("test/example.gbk")[1]
 ```
 
 `Chromosome`s have four fields, `name`, `genes`, `genedata`, and `sequence`. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
-```
+```julia
 for gene in chr.genes
     gene.locus_tag = "$(chr.name)_$(gene.locus_tag)"
 end
@@ -19,7 +19,7 @@ chr.genes[2].locus_tag = "test123"
 ```
 
 Accessing properties that haven't been stored will return missing. For this reason, it often makes more sense to use `get()` than to access the property directly.
-```
+```julia
 if chr.genes[2].pseudo
     println("Gene 2 is a pseudogene")
 end
@@ -31,7 +31,7 @@ end
 ```
 
 The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
-```
+```julia
 @genes(chr, :feature == "CDS")
 @genes(chr, length(gene) > 300)
 
@@ -44,7 +44,7 @@ delete!(@genes(chr, :pseudo))
 ```
 
 After modifying the annotations, `printgbk(io, chr)` can be used to write them to a file.
-```
+```julia
 open("updated.gbk", "w") do f
     printgbk(f, chr)
 end
