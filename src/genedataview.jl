@@ -6,7 +6,7 @@ end
 
 
 function Base.getproperty(gene::G, name::Symbol) where {G <: AbstractGene}
-    if name in fieldnames(G)
+    if name in (:parent, :index)
         return getfield(gene, name)
     elseif name in propertynames(gene)
         return gene.parent.genedata[gene.index, name]
