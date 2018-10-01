@@ -56,5 +56,5 @@ function Base.getindex(gv::GeneDataView, I::AbstractArray)
         return fill(missing, length(gv))
     end
 end
-Base.setindex!(gv::GeneDataView, v, i::Int) = setindex!(gv.parent.genedata[gv.property], v, i)
+Base.setindex!(gv::GeneDataView, v, i::Int) = setindex!(gv.parent.genedata[gv.property], v, gv.indices[i])
 Base.setindex!(gv::GeneDataView, v, I::Vararg{Int, N}) where N = setindex!(gv.parent.genedata[gv.property], v, i)
