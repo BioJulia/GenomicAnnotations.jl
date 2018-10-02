@@ -1,11 +1,13 @@
 function genes_helper!(ex)
     if ex isa Expr
         if ex.head == :call
-            for i in eachindex(ex.args)[2:end]
-                if ex.args[i] isa QuoteNode
-                    ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
-                else
-                    genes_helper!(ex.args[i])
+            if ex.args[1] != :get
+                for i in eachindex(ex.args)[2:end]
+                    if ex.args[i] isa QuoteNode
+                        ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
+                    else
+                        genes_helper!(ex.args[i])
+                    end
                 end
             end
         else
