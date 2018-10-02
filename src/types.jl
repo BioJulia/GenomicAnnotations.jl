@@ -194,11 +194,11 @@ end
 
 
 """
-    genesequence(gene::AbstractGene)
+    sequence(gene::AbstractGene)
 
 Return genomic sequence for `gene`.
 """
-function genesequence(gene::AbstractGene)
+function sequence(gene::AbstractGene)
     gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]
 end
 
