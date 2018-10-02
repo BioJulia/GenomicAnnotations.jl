@@ -38,7 +38,7 @@ end
 
 mutable struct Chromosome{G <: AbstractGene}
     name::String
-    sequence
+    sequence::BioSequence
     header::String
     genes::Vector{G}
     genedata::DataFrame
@@ -60,7 +60,7 @@ end
 """
     addgene!(chr::Chromosome, feature, locus; kw...)
 
-Add gene to `chr`. `locus` can be a
+Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange.
 """
 function addgene!(chr::Chromosome, feature, locus; kw...)
     locus = convert(Locus, locus)
@@ -361,6 +361,7 @@ function Base.isless(l1::Locus, l2::Locus)
     return false
 end
 Base.isless(g1::Gene, g2::Gene) = ((g1.locus == g2.locus) && (g1.feature == "gene" && g2.feature != "gene")) || (g1.locus < g2.locus)
+
 
 function Base.:(==)(x::Locus, y::Locus)
     (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.excluding == y.excluding)
