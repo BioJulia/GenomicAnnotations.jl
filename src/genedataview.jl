@@ -60,7 +60,7 @@ function Base.fill!(gv::GeneDataView{Gene}, x)
     else
         xT = x
     end
-    for I in eachindex(gv)
+    for I in gv.indices
         @inbounds gv[I] = x
     end
     gv
