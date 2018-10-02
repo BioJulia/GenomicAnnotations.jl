@@ -198,7 +198,9 @@ end
 Return genomic sequence for `gene`.
 """
 function BioSequences.sequence(gene::AbstractGene)
-    gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]
+    ifelse(gene.locus.strand == '-',
+        reverse_complement(gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]),
+        gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position])
 end
 
 
