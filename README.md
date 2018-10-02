@@ -9,7 +9,7 @@ GenBank files are read with `readgbk(gbkfile)`. `readgbk(gbkfile)` returns a vec
 chr = readgbk("test/example.gbk")[1]
 ```
 
-`Chromosome`s have four fields, `name`, `genes`, `genedata`, and `sequence`. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
+`Chromosome`s have five fields, `name`, `header`, `genes`, `genedata`, and `sequence`. The `name` is read from the `header`, which is stored as a string. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
 ```julia
 for gene in chr.genes
     gene.locus_tag = "$(chr.name)_$(gene.locus_tag)"
@@ -41,6 +41,17 @@ The macro `@genes` can be used to filter through the annotations. The keyword `g
 
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
 delete!(@genes(chr, :pseudo))
+```
+
+Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
+```julia
+using BioSequences
+writer = FASTA.Writer(open("proteins.fasta", "w"))
+for gene in @genes(chr, :feature == "CDS")
+    protseq = translate(convert(RNASequence, sequence(gene)))
+    write(writer, FASTA.record(gene.locus_tag, gene.product, protseq))
+end
+close(writer)
 ```
 
 After modifying the annotations, `printgbk(io, chr)` can be used to write them to a file.
