@@ -129,8 +129,25 @@ end
 """
     pushproperty!(gene::AbstractGene, name::Symbol, x::T)
 
-Add a property to `gene`, similarly to `Base.setproperty!(::gene)`, but
-transform the property to store a vector instead of overwriting existing data.
+Add a property to `gene`, similarly to `Base.setproperty!(::gene)`, but if the
+property is not missing in `gene`, it will be transformed to store a vector
+instead of overwriting existing data.
+
+```julia
+julia> eltype(chr.genedata[:EC_number])
+Union{Missing,String}
+
+julia> chr.genes[1].EC_number = "EC:1.2.3.4"
+"EC:1.2.3.4"
+
+julia> pushproperty!(chr.genes[1], :EC_number, "EC:4.3.2.1"); chr.genes[1].EC_number
+2-element Array{String,1}:
+ "EC:1.2.3.4"
+ "EC:4.3.2.1"
+
+julia> eltype(chr.genedata[:EC_number])
+Union{Missing, Array{String,1}}
+```
 """
 function pushproperty!(gene::AbstractGene, name::Symbol, x::T) where T
     if haskey(gene.parent.genedata, name)
