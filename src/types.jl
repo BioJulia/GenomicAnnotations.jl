@@ -14,11 +14,27 @@ struct Locus
 end
 
 
+"""
+    Locus()
+    Locus(position::UnitRange{Int})
+    Locus(position::UnitRange{Int}, strand::Char)
+
+
+"""
 Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[])
 Locus(position::UnitRange{Int}) = Locus(position, '.', true, true, UnitRange{Int}[])
 Locus(position::UnitRange{Int}, strand::Char) = Locus(position, strand, true, true, UnitRange{Int}[])
 Locus(position::UnitRange{Int}, strand::Char, complete_left, complete_right) = Locus(position, strand, complete_left, complete_right, UnitRange{Int}[])
 
+Base.convert(::Type{Locus}, x::UnitRange{Int}) = Locus(x)
+function Base.convert(::Type{Locus}, x::StepRange{Int, Int})
+    if x.step == -1
+        return Locus(x.stop:x.start, '-')
+    elseif x.step == 1
+        return Locus(x.start:x.stop)
+    end
+    throw(DomainError(x, "`x` must have a step of 1 or -1"))
+end
 
 mutable struct Chromosome{G <: AbstractGene}
     name::String
@@ -42,11 +58,12 @@ end
 
 
 """
-    addgene!(chr::Chromosome, feature, locus::Locus; kw...)
+    addgene!(chr::Chromosome, feature, locus; kw...)
 
-Add gene to `chr`.
+Add gene to `chr`. `locus` can be a
 """
-function addgene!(chr::Chromosome, feature, locus::Locus; kw...)
+function addgene!(chr::Chromosome, feature, locus; kw...)
+    locus = convert(Locus, locus)
     push!(chr.genedata, vcat([feature, locus], fill(missing, size(chr.genedata, 2) - 2)))
     index = UInt32(length(chr.genes) + 1)
     gene = Gene(index, chr)
@@ -75,50 +92,15 @@ end
 """
     delete!(genes::AbstractArray{Gene, 1})
 
-Delete all genes in `genes` from `gene[1].parent`.
+Delete all genes in `genes` from `genes[1].parent`.
 """
 function Base.delete!(genes::AbstractArray{Gene, 1})
     indices = genes.index
-    deleterows!(genes[1].parent.genedata, indices)
-    lastindices = length(gene.parent.genes) - length(indices) + 1 : length(gene.parent.genes)
-    deleteat!(gene.parent.genes, lastindices)
+    DataFrames.deleterows!(genes.parent.genedata, Int.(indices))
+    lastindices = length(genes.parent.genes) - length(indices) + 1 : length(genes.parent.genes)
+    deleteat!(genes.parent.genes, lastindices)
     nothing
 end
-
-
-#=
-function Base.getproperty(gene::G, name::Symbol) where {G <: AbstractGene}
-    if name in fieldnames(G)
-        return getfield(gene, name)
-    elseif haskey(gene.parent.genedata, name)
-        return gene.parent.genedata[gene.index, name]
-    end
-    return missing
-end
-
-
-function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
-    if name in fieldnames(G)
-        return getfield.(genes, name)
-    elseif haskey(genes[1].parent.genedata, name)
-        return view(genes[1].parent.genedata[name], [gene.index for gene in genes])
-    else
-        return fill(missing, length(genes))
-    end
-end
-
-
-function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene, T}
-    if haskey(gene.parent.genedata, name)
-        gene.parent.genedata[gene.index, name] = x
-    else
-        s = size(gene.parent.genedata, 1)
-        gene.parent.genedata[name] = Vector{Union{Missing, T}}(missing, s)
-        gene.parent.genedata[gene.index, name] = x
-    end
-    return x
-end
-=#
 
 
 function Base.propertynames(gene::AbstractGene)
