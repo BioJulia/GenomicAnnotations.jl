@@ -5,7 +5,7 @@ using DataFrames
 using BioSequences
 
 export Chromosome, Gene, AbstractGene, GeneDataView, Locus
-export readgbk, genesequence, iscomplement, addgene!, pushproperty!, printgbk
+export readgbk, sequence, iscomplement, addgene!, pushproperty!, printgbk
 export @genes
 
 include("types.jl")

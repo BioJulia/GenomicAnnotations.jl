@@ -197,7 +197,7 @@ end
 
 Return genomic sequence for `gene`.
 """
-function sequence(gene::AbstractGene)
+function BioSequences.sequence(gene::AbstractGene)
     gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]
 end
 
