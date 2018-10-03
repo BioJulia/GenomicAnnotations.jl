@@ -3,6 +3,13 @@ using BioSequences
 using Test
 
 @testset "GenomicAnnotations" begin
+    @testset "readgbk" begin
+        s = "     gene            1..1"
+        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(1:1, '+'))
+        s = "     gene            complement(order(3300..4037,4047..4052))"
+        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052]))
+    end
+
     chr = readgbk("example.gbk")
     @test length(chr) == 1
     chr = chr[1]
@@ -28,19 +35,19 @@ using Test
     end
 
     @testset "Iteration" begin
-        @test length([g.locus_tag for g in chr.genes]) == 6
+        @test length([g.locus_tag for g in chr.genes]) == 7
     end
 
     @testset "Adding/removing genes" begin
         addgene!(chr, "CDS", Locus(300:390, '+'), locus_tag = "tag04")
         @test chr.genes[end].locus_tag == "tag04"
         delete!(chr.genes[end])
-        @test chr.genes[end].locus_tag == "tag03"
+        @test chr.genes[end].locus_tag == "reg01"
     end
 
     @testset "@genes" begin
         @test @genes(chr, :feature == "CDS") == chr.genes[[2,4,6]]
-        @test @genes(chr, iscomplement(gene)) == chr.genes[[5,6]]
+        @test @genes(chr, iscomplement(gene)) == chr.genes[[5,6,7]]
         @test @genes(chr, :feature == "CDS", !iscomplement(gene)) == chr.genes[[2,4]]
         @test @genes(chr, length(gene) < 300)[1] == chr.genes[2]
         @test length(@genes(chr, get(gene, :locus_tag, "") == "")) == 3

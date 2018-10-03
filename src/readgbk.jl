@@ -18,11 +18,14 @@ function parseposition(line::String)
     end
     complete_left = !occursin('<', posstring)
     complete_right = !occursin('>', posstring)
+    order = Vector{UnitRange{Int}}()
     if occursin("order", posstring)
-        @warn "Loci with breaks in them have not yet been implemented"
+        for m in eachmatch(r"\d+\.\.\d+", posstring)
+            r = Meta.parse.(split(m.match, ".."))
+            push!(order, r[1]:r[2])
+        end
     end
-    excluding = Vector{UnitRange{Int}}()
-    return feature, Locus(position, strand, complete_left, complete_right, excluding)
+    return feature, Locus(position, strand, complete_left, complete_right, order)
 end
 
 

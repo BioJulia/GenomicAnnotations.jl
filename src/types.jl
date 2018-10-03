@@ -10,7 +10,7 @@ struct Locus
     strand::Char
     complete_left::Bool
     complete_right::Bool
-    excluding::Vector{UnitRange{Int}}
+    order::Vector{UnitRange{Int}}
 end
 
 
@@ -18,7 +18,6 @@ end
     Locus()
     Locus(position::UnitRange{Int})
     Locus(position::UnitRange{Int}, strand::Char)
-
 
 """
 Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[])
@@ -231,12 +230,9 @@ function appendstring(field, v)
 end
 
 function Base.show(io::IO, gene::AbstractGene)
-    s = "     " * rpad(string(gene.feature), 16, ' ')
-    iscomplement(gene) && (s *= "complement(")
-    !gene.locus.complete_left && (s *= "<")
-    s *= "$(gene.locus.position.start)..$(gene.locus.position.stop)"
-    !gene.locus.complete_right && (s *= ">")
-    iscomplement(gene) && (s *= ")")
+    buf = IOBuffer()
+    print(buf, "     " * rpad(string(gene.feature), 16, ' '))
+    print(buf, gene.locus)
     for field in names(gene.parent.genedata)
         if field in [:feature, :locus]
             continue
@@ -245,14 +241,14 @@ function Base.show(io::IO, gene::AbstractGene)
         if !ismissing(v)
             if v isa AbstractVector
                 for i in eachindex(v)
-                    s *= appendstring(field, v[i])
+                    print(buf, appendstring(field, v[i]))
                 end
             else
-                s *= appendstring(field, v)
+                print(buf, appendstring(field, v))
             end
         end
     end
-    println(io, s)
+    println(io, String(take!(buf)))
 end
 
 
@@ -277,24 +273,15 @@ end
 
 function Base.show(io::IO, locus::Locus)
     s = ""
-    if !locus.complete_left
-        s = s * ">"
+    locus.strand == '-'     && (s *= "complement(")
+    !locus.complete_left    && (s *= ">")
+    if length(locus.order) > 0
+        s *= "order(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
+    else
+        s *= join((locus.position.start, locus.position.stop), "..")
     end
-    s = s * string(locus.position.start)
-    if length(locus.excluding) > 0
-        for gap in locus.excluding
-            s = s * ".."
-        end
-    end
-    if length(locus.position) > 1
-        s = s * ".." * string(locus.position.stop)
-    end
-    if !locus.complete_right
-        s = s * "<"
-    end
-    if locus.strand == '-'
-        s = "complement(" * s * ")"
-    end
+    !locus.complete_right   && (s *= "<")
+    locus.strand == '-'     && (s *= ")")
     print(io, s)
 end
 
@@ -366,7 +353,7 @@ Base.isless(g1::Gene, g2::Gene) = ((g1.locus == g2.locus) && (g1.feature == "gen
 
 
 function Base.:(==)(x::Locus, y::Locus)
-    (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.excluding == y.excluding)
+    (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.order == y.order)
 end
 
 

@@ -66,7 +66,7 @@ FEATURES             Location/Qualifiers
                      YGSQKTVDTEKLFDLEAPEKEKRTSRDVTMSSLDPWNSNISPSPVRKSVTPSPYNVTK
                      HRNRHLQNIQDSQSGKNGITPTTMSTSSSDDFVPVKDGENFCWVHSMEPDRRPSKKRL
                      VDFSNKSNVNVGQVKDIHGRIPEML"
-     gene            complement(3300..4037)
+     gene            complement(order(3300..4037,4047..4052))
                      /gene="REV7"
      CDS             complement(3300..4037)
                      /locus_tag="tag03"
@@ -80,6 +80,8 @@ FEATURES             Location/Qualifiers
                      KDDQIITETEVFDEFRSSLNSLIMHLEKLPKVNDDTITFEAVINAIELELGHKLDRNR
                      RVDSLEEKAEIERDSNWVKCQEDENLPDNNGFQPPKIKLTSLVGSDVGPLIIHQFSEK
                      LISGDDKILNGVYSQYEEGESIFGSLF"
+     regulatory      complement(4047..4052)
+                     /locus_tag="reg01"
 ORIGIN
         1 aaatgtccat atacaacggt atctccacct caggtttaga tctcaacaac ggaaccattg
        61 ccgacatgag acagttaggt atcgtcgaga gttacaagct aaaacgagca gtagtcagct
