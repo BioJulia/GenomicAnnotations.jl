@@ -19,6 +19,7 @@ using Test
     end
 
     @testset "Gene properties" begin
+        @test length(propertynames(chr.genes[1])) == 14
         @test chr.genes[2].locus_tag == "tag01"
         @test (chr.genes[2].locus_tag = "tag01") == "tag01"
         @test begin
@@ -32,6 +33,7 @@ using Test
             GenomicAnnotations.pushproperty!(chr.genes[2], :db_xref, "GI:123")
             chr.genes[2].db_xref == ["GI:1293614", "GI:123"]
         end
+        @test GenomicAnnotations.vectorise(Union{Missing,Int}[1,1,1]) == [[1],[1],[1]]
     end
 
     @testset "Iteration" begin
@@ -77,4 +79,13 @@ using Test
     seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"
     @test sequence(chr.genes[2]) == seq
     @test length(chr.genes[2]) == length(seq)
+
+    @testset "Chromosome" begin
+        chr = Chromosome()
+        @test chr.name == ""
+        @test chr.sequence == dna""
+        @test chr.header == ""
+        @test chr.genes == Gene[]
+        @test names(chr.genedata) == [:feature, :locus]
+    end
 end
