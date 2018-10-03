@@ -38,12 +38,12 @@ end
 
 mutable struct Chromosome{G <: AbstractGene}
     name::String
-    sequence::BioSequence
+    sequence::DNASequence
     header::String
     genes::Vector{G}
     genedata::DataFrame
     function Chromosome{G}() where G
-        new("", "", "", G[], DataFrame(feature = String[], locus = Locus[]))
+        new("", dna"", "", G[], DataFrame(feature = String[], locus = Locus[]))
     end
 end
 
