@@ -54,6 +54,13 @@ end
 close(writer)
 ```
 
+Genes can be added using `addgene!`, and `sort!` can be used to make sure that the resulting annotations are in the correct order.
+```julia
+newgene = addgene!(chr, "regulatory", 670:677)
+newgene.locus_tag = "reg02"
+sort!(chr.genes)
+```
+
 After modifying the annotations, `printgbk(io, chr)` can be used to write them to a file.
 ```julia
 open("updated.gbk", "w") do f
