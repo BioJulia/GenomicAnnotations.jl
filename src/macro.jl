@@ -29,9 +29,8 @@ end
 Iterate over and evaluate expressions in `exs` for all genes in `chr.genes`,
 returning genes where all expressions evaluate to `true`. Any given symbol `s`
 in the expression will be substituted for `gene.s`. The gene itself can be
-accessed in the expression as `gene` (see example below). Missing values are
-treated as `false`.
-```jldoctest
+accessed in the expression as `gene` (see example below).
+```julia
 julia> chromosome = readgbk("example.gbk")
 Chromosome 'example' (5028 bp) with 6 annotations
 
@@ -49,7 +48,7 @@ julia> @genes(chromosome, length(gene) < 500)
 
 Accessing properties of the returned list of genes returns a view, which can be
 altered.
-```jldoctest
+```julia
 julia> @genes(chromosome, ismissing(:gene)) |> length
 2
 
