@@ -8,11 +8,14 @@ using Test
         @test GenomicAnnotations.parseposition(s) == ("gene", Locus(1:1, '+'))
         s = "     gene            complement(order(3300..4037,4047..4052))"
         @test GenomicAnnotations.parseposition(s) == ("gene", Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052]))
+
+
+        chrs = readgbk("example.gbk")
+        @test length(chrs) == 2
+        @test chrs[2].name == "plasmid1"
     end
 
-    chr = readgbk("example.gbk")
-    @test length(chr) == 1
-    chr = chr[1]
+    chr = readgbk("example.gbk")[1]
 
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))

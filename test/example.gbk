@@ -168,3 +168,11 @@ ORIGIN
      4921 ttttcagtgt tagattgctc taattctttg agctgttctc tcagctcctc atatttttct
      4981 tgccatgact cagattctaa ttttaagcta ttcaatttct ctttgatc
 //
+LOCUS       plasmid1      100 bp    DNA             PLN       21-JUN-1999
+FEATURES             Location/Qualifiers
+     source          1..100
+                     /organism="Saccharomyces cerevisiae"
+ORIGIN
+        1 aaatgtccat atacaacggt atctccacct caggtttaga tctcaacaac ggaaccattg
+       61 ccgacatgag acagttaggt atcgtcgaga gttacaagct
+// 

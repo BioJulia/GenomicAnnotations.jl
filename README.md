@@ -4,7 +4,7 @@
 GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format.
 
 ## Usage
-GenBank files are read with `readgbk(gbkfile)`. `readgbk(gbkfile)` returns a vector of `Chromosome`s, but since `example.gbk` only contains one we only need to store the first element.
+GenBank files are read with `readgbk(gbkfile)`, which returns a vector of `Chromosome`s. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
@@ -40,7 +40,8 @@ The macro `@genes` can be used to filter through the annotations. The keyword `g
 @genes(chr, (:feature == "CDS") && (length(gene) > 300))
 
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
-delete!(@genes(chr, :pseudo))
+delete!(@genes(chr, :pseudo)) # Delete all psudogenes
+delete!(@genes(chr, length(gene) <= 60)) # Delete all genes 60 nt or shorter
 ```
 
 Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
