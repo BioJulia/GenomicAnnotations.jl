@@ -1,0 +1,5 @@
+language: julia
+julia:
+  - nightly
+  - 0.7
+  - 1.0
