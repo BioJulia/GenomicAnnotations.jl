@@ -3,6 +3,18 @@
 ## Description
 GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format.
 
+## Installation
+```julia
+julia>]
+pkg> add GenomicAnnotations
+```
+or
+```julia
+using  Pkg
+Pkg.add("GenomicAnnotations")
+```
+
+
 ## Usage
 GenBank files are read with `readgbk(gbkfile)`, which returns a vector of `Chromosome`s. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
@@ -32,8 +44,9 @@ end
 
 The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
-@genes(chr, :feature == "CDS")
-@genes(chr, length(gene) > 300)
+@genes(chr, :feature == "CDS") # Returns all coding regions
+@genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
+@genes(chr, iscomplement(gene)) # Returns all features on the complement strand
 
 # The following two expressions are equivalent:
 @genes(chr, :feature == "CDS", length(gene) > 300)
