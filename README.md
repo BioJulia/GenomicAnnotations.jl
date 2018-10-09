@@ -10,7 +10,7 @@ pkg> add GenomicAnnotations
 ```
 or
 ```julia
-using  Pkg
+using Pkg
 Pkg.add("GenomicAnnotations")
 ```
 
