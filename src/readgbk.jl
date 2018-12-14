@@ -138,7 +138,7 @@ function parsechromosome(lines)
                 try
                     content = match(r" {21}([^\"]*)\"?$", line)[1]
                 catch
-                    @warn "Couldn't read content"
+                    @warn "Couldn't read content (line $linecount)"
                 end
                 if line[end] == '"'
                     spanning = false
