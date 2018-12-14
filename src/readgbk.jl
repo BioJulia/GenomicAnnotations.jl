@@ -10,18 +10,19 @@ Parse lines encoding genomic position, returning the feature as a `String`, and 
 """
 function parseposition(line::String)
     feature, posstring = split(strip(line), r" +")
-    if occursin("..", posstring)
-        position = UnitRange(parse.(Int, filter.(c->isnumeric(c), split(posstring, r"\.\.(.*\.\.)?")))...)
+    if occursin(r"(\.\.|\^)", posstring)
+        position = UnitRange(parse.(Int, filter.(c->isnumeric(c), split(posstring, r"(\.\.|\^)(.*(\.\.|\^))?")))...)
         strand = occursin("complement", posstring) ? '-' : '+'
     else
+        position = parse(Int, posstring)
         strand = '.'
     end
     complete_left = !occursin('<', posstring)
     complete_right = !occursin('>', posstring)
     order = Vector{UnitRange{Int}}()
     if occursin("order", posstring)
-        for m in eachmatch(r"\d+\.\.\d+", posstring)
-            r = Meta.parse.(split(m.match, ".."))
+        for m in eachmatch(r"\d+(\.\.|\^)\d+", posstring)
+            r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
             push!(order, r[1]:r[2])
         end
     end
@@ -70,15 +71,15 @@ function parsechromosome(lines)
 
         ### HEADER
 		if isheader && occursin(r"FEATURES", line)
+            chromosome.header = String(take!(iobuffer))
 			isheader = false
 
         elseif isheader
-            header *= linecount == 1 ? "$line" : "\n$line"
+            linecount == 1 ? print(iobuffer, line) : print(iobuffer, '\n', line)
 
         # Check if the footer has been reached
 		elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"ORIGIN", line))
 			# Stop parsing the file when the list of genes is over
-            isheader = false
             isfooter = true
 			iobuffer = IOBuffer()
 
@@ -159,9 +160,8 @@ function parsechromosome(lines)
             end
         end
     end
-    chromosome.name = parseheader(header)
+    chromosome.name = parseheader(chromosome.header)
     chromosome.sequence = DNASequence(filterseq(iobuffer))
-    chromosome.header = header
     return linecount, chromosome
 end
 
