@@ -3,6 +3,7 @@ module GenomicAnnotations
 
 using DataFrames
 using BioSequences
+using GZip
 
 export Chromosome, Gene, AbstractGene, GeneDataView, Locus
 export readgbk, sequence, iscomplement, addgene!, pushproperty!, printgbk

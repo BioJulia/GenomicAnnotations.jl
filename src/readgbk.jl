@@ -15,6 +15,7 @@ function parseposition(line::String)
         strand = occursin("complement", posstring) ? '-' : '+'
     else
         position = parse(Int, posstring)
+        position = position:position
         strand = '.'
     end
     complete_left = !occursin('<', posstring)
@@ -172,9 +173,15 @@ end
 Parse GenBank-formatted file `filename`, returning a `Chromosome`.
 """
 function readgbk(filename)
+    gz = filename[end-2:end] == ".gz"
     finished = false
     chrs = Chromosome[]
-    lines = readlines(filename)
+    if gz
+        f = GZip.open(filename)
+    else
+        f = open(filename)
+    end
+    lines = readlines(f)
     currentline = 1
     while !finished
         if currentline >= length(lines)
