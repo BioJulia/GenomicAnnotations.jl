@@ -9,6 +9,11 @@ function genes_helper!(ex)
                         genes_helper!(ex.args[i])
                     end
                 end
+            else
+                # Expand `get(s::Symbol, default)` to `get(gene, s::Symbol, default)`
+                if length(ex.args) == 3
+                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
+                end
             end
         else
             for i in eachindex(ex.args)
@@ -61,10 +66,17 @@ julia> @genes(chromosome, ismissing(:gene)) |> length
 macro genes(chr, exs...)
     exs = Any[ex for ex in exs]
     for (i, ex) in enumerate(exs)
-        if ex isa Expr
-            genes_helper!(ex)
+        # Special cases
+        if ex == :iscds
+            exs[i] = :(gene.feature == "CDS")
+        elseif ex == :(!iscds)
+            exs[i] = :(gene.feature != "CDS")
+        # Expressions
+        elseif ex isa Expr
+            exs[i] = :((x -> ismissing(x) ? false : x)($(exs[i])))
+            genes_helper!(exs[i])
         elseif ex isa QuoteNode
-            exs[i] = :(Base.getproperty(gene, $ex))
+            exs[i] = :((x -> ismissing(x) ? false : x)(Base.getproperty(gene, $ex)))
         end
     end
     ex = Expr(:&&, exs...)
