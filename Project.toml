@@ -1,5 +1,5 @@
 name = "GenomicAnnotations"
-uuid = "00d57c2a-bcd2-11e8-2d4f-9d9debe22f04"
+uuid = "4f8a0a0a-376d-5ac0-ab14-e88793df67f0"
 authors = ["Karl Dyrhage <karl.dyrhage@icm.uu.se>"]
 version = "0.1.0"
 
