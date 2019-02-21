@@ -16,7 +16,7 @@ Pkg.add("GenomicAnnotations")
 
 
 ## Usage
-GenBank files are read with `readgbk(gbkfile)`, which returns a vector of `Chromosome`s. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank files are read with `readgbk(gbkfile)`, which returns a vector of `Chromosome`s. `gbkfile` can be gzipped as long as the filename ends in ".gz". If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
@@ -32,11 +32,12 @@ chr.genes[2].locus_tag = "test123"
 
 Accessing properties that haven't been stored will return missing. For this reason, it often makes more sense to use `get()` than to access the property directly.
 ```julia
+# chr.genes[2].pseudo returns missing, so this will throw an error
 if chr.genes[2].pseudo
     println("Gene 2 is a pseudogene")
 end
-# chr.genes[2].pseudo returns missing, so this will throw an error
 
+# ... but this works:
 if get(chr.genes[2], :pseudo, false)
     println("Gene 2 is a pseudogene")
 end
@@ -53,8 +54,17 @@ The macro `@genes` can be used to filter through the annotations. The keyword `g
 @genes(chr, (:feature == "CDS") && (length(gene) > 300))
 
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
-delete!(@genes(chr, :pseudo)) # Delete all psudogenes
+delete!(@genes(chr, :pseudo)) # Delete all psudogenes. This works for all genes
+                              # where `:pseudo` is `true`, and ignores genes
+                              # where it is `false` or `missing`
 delete!(@genes(chr, length(gene) <= 60)) # Delete all genes 60 nt or shorter
+
+# Some short-hand forms are available to make life easier:
+#     `iscds` expands to `:feature == "CDS"`, and
+#     `get(s::Symbol, default)` expands to `get(gene, s, default)`
+# The following two are thus equivalent:
+@genes(chr, :feature == "CDS", occursin("glycoprotein", get(gene, :product, "")))
+@genes(chr, iscds, occursin("glycoprotein", get(:product, "")))
 ```
 
 Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
@@ -62,8 +72,8 @@ Gene sequences can be accessed with `sequence(gene)`. For example, the following
 using BioSequences
 writer = FASTA.Writer(open("proteins.fasta", "w"))
 for gene in @genes(chr, :feature == "CDS")
-    protseq = translate(convert(RNASequence, sequence(gene)))
-    write(writer, FASTA.record(gene.locus_tag, gene.product, protseq))
+    aaseq = translate(sequence(gene))
+    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, ""), aaseq))
 end
 close(writer)
 ```
