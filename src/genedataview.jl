@@ -34,11 +34,11 @@ end
 
 
 function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene, T}
-    if haskey(gene.parent.genedata, name)
+    if hasproperty(gene.parent.genedata, name)
         gene.parent.genedata[gene.index, name] = x
     else
         s = size(gene.parent.genedata, 1)
-        gene.parent.genedata[name] = Vector{Union{Missing, T}}(missing, s)
+        gene.parent.genedata[!, name] = Vector{Union{Missing, T}}(missing, s)
         gene.parent.genedata[gene.index, name] = x
     end
     return x
@@ -55,8 +55,8 @@ Base.view(gv::GeneDataView{Gene}, I) = GeneDataView(gv.parent, gv.indices[I], gv
 
 
 function Base.fill!(gv::GeneDataView{Gene}, x)
-    if haskey(gv.parent.genedata, gv.property)
-        xT = convert(eltype(gv.parent.genedata[gv.property]), x)
+    if hasproperty(gv.parent.genedata, gv.property)
+        xT = convert(eltype(gv.parent.genedata[!, gv.property]), x)
     else
         xT = x
     end

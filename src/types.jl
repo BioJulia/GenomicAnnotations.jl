@@ -133,7 +133,7 @@ property is not missing in `gene`, it will be transformed to store a vector
 instead of overwriting existing data.
 
 ```julia
-julia> eltype(chr.genedata[:EC_number])
+julia> eltype(chr.genedata[!, :EC_number])
 Union{Missing,String}
 
 julia> chr.genes[1].EC_number = "EC:1.2.3.4"
@@ -144,18 +144,18 @@ julia> pushproperty!(chr.genes[1], :EC_number, "EC:4.3.2.1"); chr.genes[1].EC_nu
  "EC:1.2.3.4"
  "EC:4.3.2.1"
 
-julia> eltype(chr.genedata[:EC_number])
+julia> eltype(chr.genedata[!, :EC_number])
 Union{Missing, Array{String,1}}
 ```
 """
 function pushproperty!(gene::AbstractGene, name::Symbol, x::T; forceany = true) where T
-    if haskey(gene.parent.genedata, name)
-        C = eltype(gene.parent.genedata[name])
+    if hasproperty(gene.parent.genedata, name)
+        C = eltype(gene.parent.genedata[!, name])
         if T <: C
             if ismissing(gene.parent.genedata[gene.index, name])
                 gene.parent.genedata[gene.index, name] = x
             else
-                gene.parent.genedata[name] = vectorise(gene.parent.genedata[name])
+                gene.parent.genedata[!, name] = vectorise(gene.parent.genedata[!, name])
                 push!(gene.parent.genedata[gene.index, name], x)
             end
         elseif Vector{T} <: C
@@ -166,25 +166,25 @@ function pushproperty!(gene::AbstractGene, name::Symbol, x::T; forceany = true) 
             end
         elseif forceany && !(C <: AbstractVector)
             if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[name] = convert(Vector{Any}, gene.parent.genedata[name])
+                gene.parent.genedata[!, name] = convert(Vector{Any}, gene.parent.genedata[!, name])
                 gene.parent.genedata[gene.index, name] = x
             else
-                gene.parent.genedata[name] = vectorise(convert(Vector{Any}, gene.parent.genedata[name]))
+                gene.parent.genedata[!, name] = vectorise(convert(Vector{Any}, gene.parent.genedata[! ,name]))
                 push!(gene.parent.genedata[gene.index, name], x)
             end
         elseif forceany && C <: AbstractVector
             if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[name] = convert(Vector{Any}, gene.parent.genedata[name])
+                gene.parent.genedata[!, name] = convert(Vector{Any}, gene.parent.genedata[!, name])
                 gene.parent.genedata[gene.index, name] = [x]
             else
                 @error "This shouldn't happen"
             end
         else
-            @error "Tried to add a '$T' to '$name::$(typeof(gene.parent.genedata[name]))'"
+            @error "Tried to add a '$T' to '$name::$(typeof(gene.parent.genedata[!, name]))'"
         end
     else
         s = size(gene.parent.genedata, 1)
-        gene.parent.genedata[name] = Vector{Union{Missing, T}}(missing, s)
+        gene.parent.genedata[!, name] = Vector{Union{Missing, T}}(missing, s)
         gene.parent.genedata[gene.index, name] = x
     end
     return x

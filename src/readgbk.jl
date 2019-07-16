@@ -143,9 +143,9 @@ function parsechromosome(lines)
                 if line[end] == '"'
                     spanning = false
                 end
-                if eltype(chromosome.genedata[Symbol(qualifier)]).b <: AbstractArray
+                if eltype(chromosome.genedata[!, Symbol(qualifier)]).b <: AbstractArray
                     i = chromosome.genes[end].index
-                    chromosome.genedata[Symbol(qualifier)][end][end] = Base.getproperty(chromosome.genes[end], Symbol(qualifier))[end] * "\n" * content
+                    chromosome.genedata[!, Symbol(qualifier)][end][end] = Base.getproperty(chromosome.genes[end], Symbol(qualifier))[end] * "\n" * content
                 else
                     Base.setproperty!(chromosome.genes[end], Symbol(qualifier), Base.getproperty(chromosome.genes[end], Symbol(qualifier)) * "\n" * content)
                 end
