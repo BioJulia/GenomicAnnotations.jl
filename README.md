@@ -45,7 +45,8 @@ end
 
 The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
-@genes(chr, :feature == "CDS") # Returns all coding regions
+@genes(chr, :feature == "CDS")  # Returns all coding regions
+@genes(chr, iscds)              # Shorthand for ':feature == "CDS"'
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
 @genes(chr, iscomplement(gene)) # Returns all features on the complement strand
 
