@@ -32,7 +32,7 @@ end
 
 
 """
-Parse footer (sequence) portion of a GenBank file, returning a `String`. When `BioSequences` is available for 0.7 this will be changed to a `DNASequence`.
+Parse footer (sequence) portion of a GenBank file, returning a `String`.
 """
 function filterseq(io::IOBuffer)
     line = String(take!(io))
@@ -162,7 +162,7 @@ function parsechromosome(lines)
         end
     end
     chromosome.name = parseheader(chromosome.header)
-    chromosome.sequence = DNASequence(filterseq(iobuffer))
+    chromosome.sequence = LongDNASeq(filterseq(iobuffer))
     return linecount, chromosome
 end
 

@@ -37,7 +37,7 @@ end
 
 mutable struct Chromosome{G <: AbstractGene}
     name::String
-    sequence::DNASequence
+    sequence::LongDNASeq
     header::String
     genes::Vector{G}
     genedata::DataFrame
@@ -211,7 +211,7 @@ end
 
 Return genomic sequence for `gene`.
 """
-function BioSequences.sequence(gene::AbstractGene)
+function sequence(gene::AbstractGene)
     ifelse(gene.locus.strand == '-',
         reverse_complement(gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]),
         gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position])
