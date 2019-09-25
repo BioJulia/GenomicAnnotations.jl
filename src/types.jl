@@ -170,46 +170,46 @@ julia> eltype(chr.genedata[!, :EC_number])
 Union{Missing, Array{String,1}}
 ```
 """
-function pushproperty!(gene::AbstractGene, name::Symbol, x::T; forceany = true) where T
-    if hasproperty(gene.parent.genedata, name)
-        C = eltype(gene.parent.genedata[!, name])
+function pushproperty!(gene::AbstractGene, qualifier::Symbol, value::T; forceany = true) where T
+    if hasproperty(gene.parent.genedata, qualifier)
+        C = eltype(gene.parent.genedata[!, qualifier])
         if T <: C
-            if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[gene.index, name] = x
+            if ismissing(gene.parent.genedata[gene.index, qualifier])
+                gene.parent.genedata[gene.index, qualifier] = value
             else
-                gene.parent.genedata[!, name] = vectorise(gene.parent.genedata[!, name])
-                push!(gene.parent.genedata[gene.index, name], x)
+                gene.parent.genedata[!, qualifier] = vectorise(gene.parent.genedata[!, qualifier])
+                push!(gene.parent.genedata[gene.index, qualifier], value)
             end
         elseif Vector{T} <: C
-            if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[gene.index, name] = [x]
+            if ismissing(gene.parent.genedata[gene.index, qualifier])
+                gene.parent.genedata[gene.index, qualifier] = [value]
             else
-                push!(gene.parent.genedata[gene.index, name], x)
+                push!(gene.parent.genedata[gene.index, qualifier], value)
             end
         elseif forceany && !(C <: AbstractVector)
-            if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[!, name] = convert(Vector{Any}, gene.parent.genedata[!, name])
-                gene.parent.genedata[gene.index, name] = x
+            if ismissing(gene.parent.genedata[gene.index, qualifier])
+                gene.parent.genedata[!, qualifier] = convert(Vector{Any}, gene.parent.genedata[!, qualifier])
+                gene.parent.genedata[gene.index, qualifier] = value
             else
-                gene.parent.genedata[!, name] = vectorise(convert(Vector{Any}, gene.parent.genedata[! ,name]))
-                push!(gene.parent.genedata[gene.index, name], x)
+                gene.parent.genedata[!, qualifier] = vectorise(convert(Vector{Any}, gene.parent.genedata[! ,qualifier]))
+                push!(gene.parent.genedata[gene.index, qualifier], value)
             end
         elseif forceany && C <: AbstractVector
-            if ismissing(gene.parent.genedata[gene.index, name])
-                gene.parent.genedata[!, name] = convert(Vector{Any}, gene.parent.genedata[!, name])
-                gene.parent.genedata[gene.index, name] = [x]
+            if ismissing(gene.parent.genedata[gene.index, qualifier])
+                gene.parent.genedata[!, qualifier] = convert(Vector{Any}, gene.parent.genedata[!, qualifier])
+                gene.parent.genedata[gene.index, qualifier] = [value]
             else
                 @error "This shouldn't happen"
             end
         else
-            @error "Tried to add a '$T' to '$name::$(typeof(gene.parent.genedata[!, name]))'"
+            @error "Tried to add a '$T' to '$qualifier::$(typeof(gene.parent.genedata[!, qualifier]))'"
         end
     else
         s = size(gene.parent.genedata, 1)
-        gene.parent.genedata[!, name] = Vector{Union{Missing, T}}(missing, s)
-        gene.parent.genedata[gene.index, name] = x
+        gene.parent.genedata[!, qualifier] = Vector{Union{Missing, T}}(missing, s)
+        gene.parent.genedata[gene.index, qualifier] = value
     end
-    return x
+    return value
 end
 
 
