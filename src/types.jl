@@ -70,6 +70,13 @@ end
 
 Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange (for
 decreasing ranges, which will be annotated on the complementary strand).
+
+# Example
+```julia
+addgene!(chr, "CDS", 1:756;
+    locus_tag = "gene0001",
+    product = "Chromosomal replication initiator protein dnaA")
+```
 """
 function addgene!(chr::Chromosome, feature, locus; kw...)
     locus = convert(Locus, locus)
@@ -141,7 +148,7 @@ end
 
 
 """
-    pushproperty!(gene::AbstractGene, name::Symbol, x::T)
+    pushproperty!(gene::AbstractGene, qualifier::Symbol, value::T)
 
 Add a property to `gene`, similarly to `Base.setproperty!(::gene)`, but if the
 property is not missing in `gene`, it will be transformed to store a vector
@@ -225,6 +232,18 @@ end
     sequence(gene::AbstractGene)
 
 Return genomic sequence for `gene`.
+
+# Example
+The following code will write the translated sequences of all genes in `chr` to a file:
+```julia
+using FASTX
+writer = FASTA.Writer(open("proteins.fasta", "w"))
+for gene in @genes(chr, iscds)
+    aaseq = translate(sequence(gene))
+    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, ""), aaseq))
+end
+close(writer)
+```
 """
 function sequence(gene::AbstractGene)
     ifelse(gene.locus.strand == '-',

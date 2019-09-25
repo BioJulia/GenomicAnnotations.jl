@@ -67,7 +67,7 @@ The macro `@genes` can be used to filter through the annotations. The keyword `g
 
 Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
 ```julia
-using BioSequences
+using FASTX
 writer = FASTA.Writer(open("proteins.fasta", "w"))
 for gene in @genes(chr, iscds)
     aaseq = translate(sequence(gene))
