@@ -1,4 +1,5 @@
 # GenomicAnnotations.jl
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://kdyrhage.github.io/GenomicAnnotations.jl/dev)
 
 ## Description
 GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format.
