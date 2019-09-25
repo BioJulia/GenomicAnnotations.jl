@@ -10,6 +10,6 @@ makedocs(sitename = "GenomicAnnotations.jl", authors = "Karl Dyrhage",
     format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true")
 )
 
-# deploydocs(
-#     repo = "github.com/kdyrhage/GenomicAnnotations.jl.git",
-# )
+deploydocs(
+    repo = "github.com/kdyrhage/GenomicAnnotations.jl.git",
+)
