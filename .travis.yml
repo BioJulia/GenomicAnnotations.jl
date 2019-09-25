@@ -6,6 +6,7 @@ julia:
 
 script:
   - julia ci_prep.jl
+  - julia -e 'using Pkg; Pkg.build(); Pkg.test("GenomicAnnotations")'
 
 jobs:
   include:
