@@ -3,7 +3,8 @@ abstract type AbstractGene end
 
 """
 Struct for storing information on genomic locations. `strand` can be '+', '-',
-or '.' when the strand is irrelevant.
+or '.' when the strand is irrelevant. `order` is used to store discontiguous
+sequences, indicated in the GenBank file with the order() and join() operators.
 """
 struct Locus
     position::UnitRange{Int}
@@ -11,6 +12,7 @@ struct Locus
     complete_left::Bool
     complete_right::Bool
     order::Vector{UnitRange{Int}}
+    join::Bool
 end
 
 
@@ -20,10 +22,10 @@ end
     Locus(position::UnitRange{Int}, strand::Char)
 
 """
-Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[])
-Locus(position::UnitRange{Int}) = Locus(position, '.', true, true, UnitRange{Int}[])
-Locus(position::UnitRange{Int}, strand::Char) = Locus(position, strand, true, true, UnitRange{Int}[])
-Locus(position::UnitRange{Int}, strand::Char, complete_left, complete_right) = Locus(position, strand, complete_left, complete_right, UnitRange{Int}[])
+Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
+Locus(position::UnitRange{Int}) = Locus(position, '.', true, true, UnitRange{Int}[], false)
+Locus(position::UnitRange{Int}, strand::Char) = Locus(position, strand, true, true, UnitRange{Int}[], false)
+Locus(position::UnitRange{Int}, strand::Char, complete_left, complete_right) = Locus(position, strand, complete_left, complete_right, UnitRange{Int}[], false)
 
 Base.convert(::Type{Locus}, x::UnitRange{Int}) = Locus(x)
 function Base.convert(::Type{Locus}, x::StepRange{Int, Int})
@@ -35,6 +37,13 @@ function Base.convert(::Type{Locus}, x::StepRange{Int, Int})
     throw(DomainError(x, "`x` must have a step of 1 or -1"))
 end
 
+
+"""
+Struct for storing annotations for a single chromosome, plasmid, contig, etc.
+Contains five fields: `name`, `sequence`, `header`, `genes`, and `genedata`.
+Annotations are stored as a `DataFrame` in `genedata`, but can be accessed
+more easily through `genes` using the API provided in this module.
+"""
 mutable struct Chromosome{G <: AbstractGene}
     name::String
     sequence::LongDNASeq
@@ -59,7 +68,8 @@ end
 """
     addgene!(chr::Chromosome, feature, locus; kw...)
 
-Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange.
+Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange (for
+decreasing ranges, which will be annotated on the complementary strand).
 """
 function addgene!(chr::Chromosome, feature, locus; kw...)
     locus = convert(Locus, locus)
@@ -291,7 +301,11 @@ function Base.show(io::IO, locus::Locus)
     locus.strand == '-'     && (s *= "complement(")
     !locus.complete_left    && (s *= ">")
     if length(locus.order) > 0
-        s *= "order(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
+        if locus.join
+            s *= "join(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
+        else
+            s *= "order(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
+        end
     else
         s *= join((locus.position.start, locus.position.stop), "..")
     end
@@ -328,6 +342,11 @@ function formatsequence(sequence, io = IOBuffer)
 end
 
 
+"""
+    printgbk([io], chr)
+
+Print `chr` in GenBank format.
+"""
 function printgbk(chrs::AbstractVector{C}) where {C <: Chromosome}
     io = IOBuffer()
     printgbk(io, chrs)

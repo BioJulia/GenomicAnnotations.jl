@@ -7,7 +7,7 @@ using Test
         s = "     gene            1..1"
         @test GenomicAnnotations.parseposition(s) == ("gene", Locus(1:1, '+'))
         s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052]))
+        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
 
 
         chrs = readgbk("example.gbk")
@@ -71,7 +71,7 @@ using Test
     end
 
     @testset "Locus" begin
-        locus = Locus(1:1, '.', true, true, UnitRange{Int}[])
+        locus = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
         @test Locus() == locus
         @test chr.genes[2].locus < chr.genes[4].locus
         @test chr.genes[2].locus == chr.genes[2].locus

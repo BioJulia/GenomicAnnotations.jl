@@ -34,7 +34,9 @@ end
 Iterate over and evaluate expressions in `exs` for all genes in `chr.genes`,
 returning genes where all expressions evaluate to `true`. Any given symbol `s`
 in the expression will be substituted for `gene.s`. The gene itself can be
-accessed in the expression as `gene` (see example below).
+accessed in the expression as `gene`.
+
+# Examples
 ```julia
 julia> chromosome = readgbk("example.gbk")
 Chromosome 'example' (5028 bp) with 6 annotations

@@ -1,3 +1,6 @@
+"""
+Return the LOCUS entry of the header.
+"""
 function parseheader(header::String)
     lines = split(header, "\n")
     locus = split(lines[1], r" +")[2]
@@ -21,13 +24,14 @@ function parseposition(line::String)
     complete_left = !occursin('<', posstring)
     complete_right = !occursin('>', posstring)
     order = Vector{UnitRange{Int}}()
-    if occursin("order", posstring)
+	join = occursin("join", posstring)
+    if join || occursin("order", posstring)
         for m in eachmatch(r"\d+(\.\.|\^)\d+", posstring)
             r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
             push!(order, r[1]:r[2])
         end
     end
-    return feature, Locus(position, strand, complete_left, complete_right, order)
+    return feature, Locus(position, strand, complete_left, complete_right, order, join)
 end
 
 
