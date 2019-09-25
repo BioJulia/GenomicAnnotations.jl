@@ -174,7 +174,7 @@ end
 """
     readgbk(filename)
 
-Parse GenBank-formatted file `filename`, returning a `Chromosome`.
+Parse GenBank-formatted file `filename`, returning a `Vector{Chromosome}`.
 """
 function readgbk(filename)
     gz = filename[end-2:end] == ".gz"
