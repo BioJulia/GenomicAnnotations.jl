@@ -102,6 +102,11 @@ end
     delete!(genes::AbstractArray{Gene, 1})
 
 Delete all genes in `genes` from `genes[1].parent`.
+
+# Example
+```julia
+delete!(@genes(chr, length(gene) <= 60))
+```
 """
 function Base.delete!(genes::AbstractArray{Gene, 1})
     indices = genes.index
