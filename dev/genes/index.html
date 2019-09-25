@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Filtering: the @genes macro · GenomicAnnotations.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>GenomicAnnotations.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../">GenomicAnnotations.jl</a></li><li><a class="toctext" href="../io/">I/O</a></li><li><a class="toctext" href="../accessing/">Accessing and modifying annotations</a></li><li class="current"><a class="toctext" href>Filtering: the @genes macro</a><ul class="internal"></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href>Filtering: the @genes macro</a></li></ul><a class="edit-page" href="https://github.com/kdyrhage/GenomicAnnotations.jl/blob/master/docs/src/genes.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Filtering: the @genes macro</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Filtering:-the-@genes-macro-1" href="#Filtering:-the-@genes-macro-1">Filtering: the @genes macro</a></h1><p>A useful tool provided by GenomicAnnotations is the macro <code>@genes</code>. It is used to filter through annotations, for example to look at only at coding sequences or rRNAs, which can then be modified or iterated over:</p><pre><code class="language-julia"># Print locus tags of all coding sequences longer than 1000 nt, that are not pseudo genes
+for gene in @genes(chr, iscds, length(gene) &gt; 1000, ! :pseudo)
+    println(gene.locus_tag)
+end</code></pre><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="GenomicAnnotations.@genes" href="#GenomicAnnotations.@genes"><code>GenomicAnnotations.@genes</code></a> — <span class="docstring-category">Macro</span>.</div><div><div><pre><code class="language-julia">@genes(chr, exs...)</code></pre><p>Iterate over and evaluate expressions in <code>exs</code> for all genes in <code>chr.genes</code>, returning genes where all expressions evaluate to <code>true</code>. Any given symbol <code>s</code> in the expression will be substituted for <code>gene.s</code>. The gene itself can be accessed in the expression as <code>gene</code>. Accessing properties of the returned list of genes returns a view, which can be altered.</p><p>Some short-hand forms are available to make life easier:     <code>iscds</code> expands to <code>:feature == &quot;CDS&quot;</code>, and     <code>get(s::Symbol, default)</code> expands to <code>get(gene, s, default)</code></p><p><strong>Examples</strong></p><pre><code class="language-julia">julia&gt; chromosome = readgbk(&quot;example.gbk&quot;)
+Chromosome &#39;example&#39; (5028 bp) with 6 annotations
+
+julia&gt; @genes(chromosome, iscds) |&gt; length
+3
+
+julia&gt; @genes(chromosome, length(gene) &lt; 500)
+     CDS             3..206
+                     /db_xref=&quot;GI:1293614&quot;
+                     /locus_tag=&quot;tag01&quot;
+                     /codon_start=&quot;3&quot;
+                     /product=&quot;TCP1-beta&quot;
+                     /protein_id=&quot;AAA98665.1&quot;
+
+julia&gt; @genes(chromosome, ismissing(:gene)) |&gt; length
+2
+
+julia&gt; @genes(chromosome, ismissing(:gene)).gene .= &quot;Unknown&quot;;
+
+julia&gt; @genes(chromosome, ismissing(:gene)) |&gt; length
+0</code></pre><p>All arguments have to evaluate to <code>true</code> for a gene to be included, so the following expressions are equivalent:</p><pre><code class="language-julia">@genes(chr, :feature == &quot;CDS&quot;, length(gene) &gt; 300)
+@genes(chr, (:feature == &quot;CDS&quot;) &amp;&amp; (length(gene) &gt; 300))</code></pre><p><code>@genes</code> returns a <code>Vector{Gene}</code>. Attributes can be accessed with dot-syntax, and can be assigned to</p><pre><code class="language-julia">@genes(chr, :locus_tag == &quot;tag03&quot;)[1].pseudo = true
+@genes(chr, iscds, ismissing(:gene)).gene .= &quot;unknown&quot;</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/kdyrhage/GenomicAnnotations.jl/blob/63289cea62aff832c3c7c2f6a48fe07caf4da475/src/macro.jl#L31-L80">source</a></section><footer><hr/><a class="previous" href="../accessing/"><span class="direction">Previous</span><span class="title">Accessing and modifying annotations</span></a></footer></article></body></html>
