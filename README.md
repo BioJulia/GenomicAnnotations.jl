@@ -72,7 +72,7 @@ Gene sequences can be accessed with `sequence(gene)`. For example, the following
 using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
-    for gene in @genes(chr, iscds)
+    for gene in @genes(chr, CDS)
         aaseq = translate(sequence(gene))
         write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
     end
