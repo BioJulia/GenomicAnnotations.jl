@@ -46,35 +46,36 @@ end
 
 The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
-@genes(chr, :feature == "CDS")  # Returns all coding regions
+@genes(chr, feature(gene) == "CDS")  # Returns all coding regions
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
 @genes(chr, iscomplement(gene)) # Returns all features on the complement strand
 
 # Some short-hand forms are available to make life easier:
-#     `iscds` expands to `:feature == "CDS"`, and
+#     `CDS` expands to `feature(gene) == "CDS"`, and
 #     `get(s::Symbol, default)` expands to `get(gene, s, default)`
 # The following two are thus equivalent:
 @genes(chr, :feature == "CDS", occursin("glycoprotein", get(gene, :product, "")))
-@genes(chr,             iscds, occursin("glycoprotein", get(      :product, "")))
+@genes(chr,               CDS, occursin("glycoprotein", get(      :product, "")))
 
 # All arguments have to evaluate to `true` for a gene to be included, so the following expressions are equivalent:
-@genes(chr, :feature == "CDS", length(gene) > 300)
-@genes(chr, (:feature == "CDS") && (length(gene) > 300))
+@genes(chr, feature(gene) == "CDS", length(gene) > 300)
+@genes(chr, (feature(gene) == "CDS") && (length(gene) > 300))
 
 # `@genes` returns a `Vector{Gene}`. Attributes can be accessed with dot-syntax, and can be assigned to
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
-@genes(chr, iscds, ismissing(:gene)).gene .= "unknown"
+@genes(chr, CDS, ismissing(:gene)).gene .= "unknown"
 ```
 
 Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
 ```julia
+using BioSequences
 using FASTX
-writer = FASTA.Writer(open("proteins.fasta", "w"))
-for gene in @genes(chr, iscds)
-    aaseq = translate(sequence(gene))
-    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, ""), aaseq))
+open(FASTA.Writer, "proteins.fasta") do w
+    for gene in @genes(chr, iscds)
+        aaseq = translate(sequence(gene))
+        write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
+    end
 end
-close(writer)
 ```
 
 Genes can be added using `addgene!`, and `sort!` can be used to make sure that the resulting annotations are in the correct order for printing. `delete!` is used to remove genes.
@@ -92,7 +93,7 @@ delete!(@genes(chr, length(gene) <= 60))
 Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `printgbk(io, chr)` can be used to write them to a file.
 ```julia
 println(chr.genes[1])
-println(@genes(chr, iscds))
+println(@genes(chr, CDS))
 
 open("updated.gbk", "w") do f
     printgbk(f, chr)

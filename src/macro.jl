@@ -1,7 +1,18 @@
 function genes_helper!(ex)
     if ex isa Expr
+        if ex.args[1] != :Ref
+            skipgene = ex.args[1] ∉ [:(||), :(&&)]
+            skipfirst = ex.head == :call
+            genes_special_cases!(ex.args; skipgene = skipgene, skipfirst = skipfirst)
+        end
         if ex.head == :call
-            if ex.args[1] != :get
+            if ex.args[1] == :Ref
+                # Remove Ref(), but ignore the content
+                ex2 = copy(ex)
+                ex.head = :ref
+                empty!(ex.args)
+                push!(ex.args, ex2)
+            elseif ex.args[1] != :get
                 for i in eachindex(ex.args)[2:end]
                     if ex.args[i] isa QuoteNode
                         ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
@@ -18,7 +29,9 @@ function genes_helper!(ex)
         else
             for i in eachindex(ex.args)
                 if ex.args[i] isa QuoteNode
-                    ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
+                    if ex.head != :(.)
+                        ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
+                    end
                 else
                     genes_helper!(ex.args[i])
                 end
@@ -37,8 +50,10 @@ in the expression will be substituted for `gene.s`. The gene itself can be
 accessed in the expression as `gene`. Accessing properties of the returned list
 of genes returns a view, which can be altered.
 
+Symbols and expressions escaped with `Ref()` will be ignored.
+
 Some short-hand forms are available to make life easier:
-    `iscds` expands to `:feature == "CDS"`, and
+    `CDS`, `rRNA`, and `tRNA` expand to `feature(gene) == "..."`,
     `get(s::Symbol, default)` expands to `get(gene, s, default)`
 
 # Examples
@@ -68,26 +83,22 @@ julia> @genes(chromosome, ismissing(:gene)) |> length
 
 All arguments have to evaluate to `true` for a gene to be included, so the following expressions are equivalent:
 ```julia
-@genes(chr, :feature == "CDS", length(gene) > 300)
-@genes(chr, (:feature == "CDS") && (length(gene) > 300))
+@genes(chr, feature(gene) == Ref(:CDS), length(gene) > 300)
+@genes(chr, (feature(gene) == Ref(:CDS)) && (length(gene) > 300))
 ```
 
 `@genes` returns a `Vector{Gene}`. Attributes can be accessed with dot-syntax, and can be assigned to
 ```julia
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
-@genes(chr, iscds, ismissing(:gene)).gene .= "unknown"
+@genes(chr, CDS, ismissing(:gene)).gene .= "unknown"
 ```
 """
 macro genes(chr, exs...)
     exs = Any[ex for ex in exs]
+    genes_special_cases!(exs; skipgene = false, skipfirst = false)
     for (i, ex) in enumerate(exs)
-        # Special cases
-        if ex == :iscds
-            exs[i] = :(gene.feature == "CDS")
-        elseif ex == :(!iscds)
-            exs[i] = :(gene.feature != "CDS")
         # Expressions
-        elseif ex isa Expr
+        if ex isa Expr
             exs[i] = :((x -> ismissing(x) ? false : x)($(exs[i])))
             genes_helper!(exs[i])
         elseif ex isa QuoteNode
@@ -98,11 +109,103 @@ macro genes(chr, exs...)
     hits = gensym()
     i = gensym()
     return esc(quote
-        $hits = falses(size($chr.genes, 1))
-        for ($i, gene) in enumerate($chr.genes)
-            local h = $ex
-            $hits[$i] = ismissing(h) ? false : h
+        if $chr isa AbstractVector
+            vcat([begin
+                    $hits = falses(size(c.genes, 1))
+                    for ($i, gene) in enumerate(c.genes)
+                        local h = $ex
+                        $hits[$i] = ismissing(h) ? false : h
+                    end
+                    c.genes[$hits]
+                end for c in $chr]...)
+        else
+            $hits = falses(size($chr.genes, 1))
+            for ($i, gene) in enumerate($chr.genes)
+                local h = $ex
+                $hits[$i] = ismissing(h) ? false : h
+            end
+            $chr.genes[$hits]
         end
-        $chr.genes[$hits]
     end)
 end
+
+
+
+function genes_special_cases!(exs; skipgene = false, skipfirst = true)
+    for (i, ex) in enumerate(exs)
+        skipfirst && i == 1 && continue
+        if ex == :CDS
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:CDS))
+        elseif ex == :(!CDS)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:CDS))
+        elseif ex == :rRNA
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:rRNA))
+        elseif ex == :(!rRNA)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:rRNA))
+        elseif ex == :tRNA
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:tRNA))
+        elseif ex == :(!tRNA)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:tRNA))
+        elseif ex == :gene && !skipgene
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:gene))
+        elseif ex == :(!gene)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:gene))
+        elseif ex == :regulatory
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:regulatory))
+        elseif ex == :(!regulatory)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:regulatory))
+        elseif ex == :source
+            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:source))
+        elseif ex == :(!source)
+            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:source))
+        end
+    end
+end
+
+
+# Features from the GenBank specifications without shorthand forms:
+#   assembly_gap
+#   C_region
+#   centromere
+#   D-loop
+#   D_segment
+#   gap
+#   iDNA
+#   intron
+#   J_segment
+#   mat_peptide
+#   misc_binding
+#   misc_difference
+#   misc_feature
+#   misc_recomb
+#   misc_RNA
+#   misc_structure
+#   mobile_element
+#   modified_base
+#   mRNA
+#   ncRNA
+#   N_region
+#   old_sequence
+#   operon
+#   oriT
+#   polyA_site
+#   precursor_RNA
+#   prim_transcript
+#   primer_bind
+#   propeptide
+#   protein_bind
+#   repeat_region
+#   rep_origin
+#   S_region
+#   sig_peptide
+#   stem_loop
+#   STS
+#   telomere
+#   tmRNA
+#   transit_peptide
+#   unsure
+#   V_region
+#   V_segment
+#   variation
+#   3'UTR
+#   5'UTR
