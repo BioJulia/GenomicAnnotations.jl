@@ -6,7 +6,7 @@ using BioSequences
 using GZip
 
 export Chromosome, Gene, AbstractGene, GeneDataView, Locus
-export readgbk, sequence, iscomplement, addgene!, pushproperty!, printgbk
+export readgbk, sequence, iscomplement, iscomplete, addgene!, pushproperty!, printgbk
 export feature, index, locus
 export @genes
 

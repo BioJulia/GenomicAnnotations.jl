@@ -278,6 +278,14 @@ Return `true` if `locus(gene).compliment == '-'`, otherwise return `false`.
 iscomplement(gene::AbstractGene) = locus(gene).strand == '-'
 
 
+"""
+    iscomplete(gene)
+
+Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
+"""
+iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :ribosomal_slippage, false)) && locus(gene).complete_right && locus(gene).complete_left
+
+
 function appendstring(field, v)
     s = ""
     if v isa Bool
