@@ -242,7 +242,7 @@ end
 
 
 """
-    sequence(gene::AbstractGene; AA = false)
+    sequence(gene::AbstractGene; translate = false)
 
 Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, otherwise it will be returned as a `LongDNASeq`.
 ```
