@@ -251,7 +251,7 @@ function sequence(gene::AbstractGene; translate = false)
     if locus(gene).strand == '-'
         s = reverse_complement(parent(gene).sequence[locus(gene).position])
     else
-        s = parent(gene).sequence[locus(gene).position])
+        s = parent(gene).sequence[locus(gene).position]
     end
     translate ? BioSequences.translate(s) : s
 end
