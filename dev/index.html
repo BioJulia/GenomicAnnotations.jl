@@ -5,13 +5,14 @@ Pkg.add(&quot;GenomicAnnotations&quot;)</code></pre><h2><a class="nav-anchor" id
     gene.locus_tag = &quot;$(chr.name)_$(gene.locus_tag)&quot;
 end
 
-chr.genes[2].locus_tag = &quot;test123&quot;</code></pre><p>The macro <code>@genes</code> can be used to filter through the annotations. The keyword <code>gene</code> is used to refer to the individual <code>Gene</code>s. <code>@genes</code> can also be used to modify annotations.</p><pre><code class="language-julia">@genes(chr, length(gene) &gt; 300) # Returns all features longer than 300 nt</code></pre><p>Gene sequences can be accessed with <code>sequence(gene)</code>. For example, the following code will write the translated sequences of all protein-coding genes to a file:</p><pre><code class="language-julia">using FASTX
-writer = FASTA.Writer(open(&quot;proteins.fasta&quot;, &quot;w&quot;))
-for gene in @genes(chr, iscds)
-    aaseq = translate(sequence(gene))
-    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, &quot;&quot;), aaseq))
-end
-close(writer)</code></pre><p>Genes can be added using <code>addgene!</code>, and <code>sort!</code> can be used to make sure that the resulting annotations are in the correct order for printing. <code>delete!</code> is used to remove genes.</p><pre><code class="language-julia">newgene = addgene!(chr, &quot;regulatory&quot;, 670:677)
+chr.genes[2].locus_tag = &quot;test123&quot;</code></pre><p>The macro <code>@genes</code> can be used to filter through the annotations (see <a href="genes/#GenomicAnnotations.@genes"><code>@genes</code></a>). The keyword <code>gene</code> is used to refer to the individual <code>Gene</code>s. <code>@genes</code> can also be used to modify annotations.</p><pre><code class="language-julia">@genes(chr, length(gene) &gt; 300) # Returns all features longer than 300 nt</code></pre><p>Gene sequences can be accessed with <code>sequence(gene)</code>. For example, the following code will write the translated sequences of all protein-coding genes in <code>chr</code> to a file:</p><pre><code class="language-julia">using BioSequences
+using FASTX
+open(FASTA.Writer, &quot;proteins.fasta&quot;) do w
+    for gene in @genes(chr, CDS)
+        aaseq = translate(sequence(gene))
+        write(w, FASTA.record(gene.locus_tag, get(:product, &quot;&quot;), aaseq))
+    end
+end</code></pre><p>Genes can be added using <code>addgene!</code>, and <code>sort!</code> can be used to make sure that the resulting annotations are in the correct order for printing. <code>delete!</code> is used to remove genes.</p><pre><code class="language-julia">newgene = addgene!(chr, &quot;regulatory&quot;, 670:677)
 newgene.locus_tag = &quot;reg02&quot;
 sort!(chr.genes)
 
@@ -19,7 +20,7 @@ sort!(chr.genes)
 delete!(@genes(chr, :pseudo))
 # Delete all genes 60 nt or shorter
 delete!(@genes(chr, length(gene) &lt;= 60))</code></pre><p>Individual genes, and <code>Vector{Gene}</code>s are printed in GBK format. To include the GBK header and the nucleotide sequence, <code>printgbk(io, chr)</code> can be used to write them to a file.</p><pre><code class="language-julia">println(chr.genes[1])
-println(@genes(chr, iscds))
+println(@genes(chr, CDS))
 
 open(&quot;updated.gbk&quot;, &quot;w&quot;) do f
     printgbk(f, chr)
