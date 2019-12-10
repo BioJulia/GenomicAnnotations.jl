@@ -1,6 +1,6 @@
 # Accessing and modifying annotations
 
-# Feature
+## Feature
 Features (genes) can be added using `addgene!`. A feature must have a feature name and a locus (position), and can have any number of additional qualifiers associated with it (see next section).
 ```@docs
 addgene!
@@ -17,7 +17,7 @@ delete!(::Gene)
 delete!(::AbstractVector{Gene})
 ```
 
-# Qualifiers
+## Qualifiers
 Features can have multiple qualifiers, which can be modified using Julia's property syntax:
 ```julia
 # Remove newspace from gene product descriptions
@@ -50,7 +50,7 @@ if get(chr.genes[2], :pseudo, false)
 end
 ```
 
-# Sequences
+## Sequences
 The sequence of a `Chromosome` `chr` is stored in `chr.sequence`. Sequences of individual features can be read with `sequence`:
 ```@docs
 sequence(::Gene)
