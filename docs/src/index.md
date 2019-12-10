@@ -31,20 +31,21 @@ end
 chr.genes[2].locus_tag = "test123"
 ```
 
-The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
+The macro `@genes` can be used to filter through the annotations (see [`@genes`](@ref)). The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
 ```
 
-Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
+Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes in `chr` to a file:
 ```julia
+using BioSequences
 using FASTX
-writer = FASTA.Writer(open("proteins.fasta", "w"))
-for gene in @genes(chr, iscds)
-    aaseq = translate(sequence(gene))
-    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, ""), aaseq))
+open(FASTA.Writer, "proteins.fasta") do w
+    for gene in @genes(chr, CDS)
+        aaseq = translate(sequence(gene))
+        write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
+    end
 end
-close(writer)
 ```
 
 Genes can be added using `addgene!`, and `sort!` can be used to make sure that the resulting annotations are in the correct order for printing. `delete!` is used to remove genes.
@@ -62,7 +63,7 @@ delete!(@genes(chr, length(gene) <= 60))
 Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `printgbk(io, chr)` can be used to write them to a file.
 ```julia
 println(chr.genes[1])
-println(@genes(chr, iscds))
+println(@genes(chr, CDS))
 
 open("updated.gbk", "w") do f
     printgbk(f, chr)

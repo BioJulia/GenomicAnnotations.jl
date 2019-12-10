@@ -21,7 +21,7 @@ delete!(::AbstractVector{Gene})
 Features can have multiple qualifiers, which can be modified using Julia's property syntax:
 ```julia
 # Remove newspace from gene product descriptions
-for gene in @genes(chr, iscds)
+for gene in @genes(chr, CDS)
     replace!(gene.product, '\n' => ' ')
 end
 ```
@@ -29,7 +29,7 @@ end
 Properties also work on views of genes, typically generated using `@genes`:
 ```julia
 interestinggenes = readlines("/path/to/list/of/interesting/genes.txt")
-@genes(chr, iscds, :locus_tag in interestinggenes).interesting .= true
+@genes(chr, CDS, :locus_tag in interestinggenes).interesting .= true
 ```
 
 Sometimes features have multiple instances of the same qualifier, such genes having several EC-numbers. Assigning qualifiers with property syntax overwrites any data that was previously stored for that feature, and trying to assign a vector of values to a qualifier that is currently storing scalars will result in an error, so to safely assign qualifiers that might have more instances one can use `pushproperty!`:
