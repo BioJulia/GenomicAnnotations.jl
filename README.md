@@ -44,24 +44,25 @@ if get(chr.genes[2], :pseudo, false)
 end
 ```
 
-The macro `@genes` can be used to filter through the annotations. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
+The macro `@genes` can be used to filter through the annotations. The macro takes a `Chromosome` or a `Vector{Chromosome}`, followed by any number of expressions that will be evaluated for each gene. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations. Gene attributes can be referred to using `Symbol`s.
 ```julia
 @genes(chr, feature(gene) == "CDS")  # Returns all coding regions
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
 @genes(chr, iscomplement(gene)) # Returns all features on the complement strand
+@genes(chr, ismissing(:product)) # Returns all features for which the attribute "product" has not been set
 
 # Some short-hand forms are available to make life easier:
 #     `CDS` expands to `feature(gene) == "CDS"`, and
 #     `get(s::Symbol, default)` expands to `get(gene, s, default)`
 # The following two are thus equivalent:
-@genes(chr, :feature == "CDS", occursin("glycoprotein", get(gene, :product, "")))
-@genes(chr,               CDS, occursin("glycoprotein", get(      :product, "")))
+@genes(chr, feature(gene) == "CDS", occursin("glycoprotein", get(gene, :product, "")))
+@genes(chr,                   CDS,  occursin("glycoprotein", get(      :product, "")))
 
 # All arguments have to evaluate to `true` for a gene to be included, so the following expressions are equivalent:
 @genes(chr, feature(gene) == "CDS", length(gene) > 300)
 @genes(chr, (feature(gene) == "CDS") && (length(gene) > 300))
 
-# `@genes` returns a `Vector{Gene}`. Attributes can be accessed with dot-syntax, and can be assigned to
+# `@genes` returns a `Vector{Gene}`. Attributes can be accessed with dot-syntax, and can be assigned to:
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
 @genes(chr, CDS, ismissing(:gene)).gene .= "unknown"
 ```
