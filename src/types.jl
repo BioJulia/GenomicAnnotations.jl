@@ -1,3 +1,13 @@
+"""
+Abstract type used to represent genes on a `Chromosome`. Subtypes must implement:
+ * parent(gene)
+ * index(gene)
+ * locus(gene)
+ * addgene!(chr, feature, locus)
+
+This mainly exists to allow `Chromosome`s and `Gene`s to refer to eachother,
+and may be removed in the future.
+"""
 abstract type AbstractGene end
 
 
@@ -50,9 +60,7 @@ mutable struct Chromosome{G <: AbstractGene}
     header::String
     genes::Vector{G}
     genedata::DataFrame
-    function Chromosome{G}() where G
-        new("", dna"", "", G[], DataFrame(feature = String[], locus = Locus[]))
-    end
+    Chromosome{G}(name, sequence, header, genes::Vector{G}, genedata) where G = new(name, sequence, header, genes, genedata)
 end
 
 
@@ -60,9 +68,14 @@ Chromosome(args...) = Chromosome{Gene}(args...)
 
 
 struct Gene <: AbstractGene
+    parent::Chromosome{Gene}
     index::UInt
-    parent::Chromosome
+    locus::Locus
+    feature::Symbol
 end
+
+
+Chromosome{Gene}() = Chromosome{Gene}("", dna"", "", Gene[], DataFrame())
 
 
 """
@@ -78,11 +91,11 @@ addgene!(chr, "CDS", 1:756;
     product = "Chromosomal replication initiator protein dnaA")
 ```
 """
-function addgene!(chr::Chromosome, feature, locus; kw...)
+function addgene!(chr::Chromosome{Gene}, feature, locus; kw...)
     locus = convert(Locus, locus)
-    push!(chr.genedata, vcat([feature, locus], fill(missing, size(chr.genedata, 2) - 2)))
+    push!(chr.genedata, fill(missing, size(chr.genedata, 2)))
     index = UInt32(length(chr.genes) + 1)
-    gene = Gene(index, chr)
+    gene = Gene(chr, index, locus, feature)
     for (k, v) in kw
         Base.setproperty!(gene, k, v)
     end
@@ -92,15 +105,15 @@ end
 
 
 """
-    delete!(gene::Gene)
+    delete!(gene::AbstractGene)
 
-Delete `gene` from `gene.parent`. Warning: does not work when broadcasted! Use
+Delete `gene` from `parent(gene)`. Warning: does not work when broadcasted! Use
 `delete!(::AbstractVector{Gene}) instead.`
 """
-function Base.delete!(gene::Gene)
-    i = gene.index
-    deleterows!(gene.parent.genedata, i)
-    deleteat!(gene.parent.genes, lastindex(gene.parent.genes))
+function Base.delete!(gene::AbstractGene)
+    i = index(gene)
+    deleterows!(parent(gene).genedata, i)
+    deleteat!(parent(gene).genes, lastindex(parent(gene).genes))
     nothing
 end
 
@@ -108,7 +121,7 @@ end
 """
     delete!(genes::AbstractArray{Gene, 1})
 
-Delete all genes in `genes` from `genes[1].parent`.
+Delete all genes in `genes` from `parent(genes[1])`.
 
 # Example
 ```julia
@@ -116,16 +129,16 @@ delete!(@genes(chr, length(gene) <= 60))
 ```
 """
 function Base.delete!(genes::AbstractArray{Gene, 1})
-    indices = genes.index
-    DataFrames.deleterows!(genes.parent.genedata, Int.(indices))
-    lastindices = length(genes.parent.genes) - length(indices) + 1 : length(genes.parent.genes)
-    deleteat!(genes.parent.genes, lastindices)
+    indices = index(gene)
+    DataFrames.deleterows!(parent(genes).genedata, Int.(indices))
+    lastindices = length(parent(genes).genes) - length(indices) + 1 : length(parent(genes).genes)
+    deleteat!(parent(genes).genes, lastindices)
     nothing
 end
 
 
-function Base.propertynames(gene::AbstractGene)
-    names(gene.parent.genedata)
+function Base.propertynames(gene::G) where {G <: AbstractGene}
+    names(parent(gene).genedata)
 end
 
 
@@ -171,54 +184,54 @@ Union{Missing, Array{String,1}}
 ```
 """
 function pushproperty!(gene::AbstractGene, qualifier::Symbol, value::T; forceany = true) where T
-    if hasproperty(gene.parent.genedata, qualifier)
-        C = eltype(gene.parent.genedata[!, qualifier])
+    if hasproperty(parent(gene).genedata, qualifier)
+        C = eltype(parent(gene).genedata[!, qualifier])
         if T <: C
-            if ismissing(gene.parent.genedata[gene.index, qualifier])
-                gene.parent.genedata[gene.index, qualifier] = value
+            if ismissing(parent(gene).genedata[index(gene), qualifier])
+                parent(gene).genedata[index(gene), qualifier] = value
             else
-                gene.parent.genedata[!, qualifier] = vectorise(gene.parent.genedata[!, qualifier])
-                push!(gene.parent.genedata[gene.index, qualifier], value)
+                parent(gene).genedata[!, qualifier] = vectorise(parent(gene).genedata[!, qualifier])
+                push!(parent(gene).genedata[index(gene), qualifier], value)
             end
         elseif Vector{T} <: C
-            if ismissing(gene.parent.genedata[gene.index, qualifier])
-                gene.parent.genedata[gene.index, qualifier] = [value]
+            if ismissing(parent(gene).genedata[index(gene), qualifier])
+                parent(gene).genedata[index(gene), qualifier] = [value]
             else
-                push!(gene.parent.genedata[gene.index, qualifier], value)
+                push!(parent(gene).genedata[index(gene), qualifier], value)
             end
         elseif forceany && !(C <: AbstractVector)
-            if ismissing(gene.parent.genedata[gene.index, qualifier])
-                gene.parent.genedata[!, qualifier] = convert(Vector{Any}, gene.parent.genedata[!, qualifier])
-                gene.parent.genedata[gene.index, qualifier] = value
+            if ismissing(parent(gene).genedata[index(gene), qualifier])
+                parent(gene).genedata[!, qualifier] = convert(Vector{Any}, parent(gene).genedata[!, qualifier])
+                parent(gene).genedata[index(gene), qualifier] = value
             else
-                gene.parent.genedata[!, qualifier] = vectorise(convert(Vector{Any}, gene.parent.genedata[! ,qualifier]))
-                push!(gene.parent.genedata[gene.index, qualifier], value)
+                parent(gene).genedata[!, qualifier] = vectorise(convert(Vector{Any}, parent(gene).genedata[! ,qualifier]))
+                push!(parent(gene).genedata[index(gene), qualifier], value)
             end
         elseif forceany && C <: AbstractVector
-            if ismissing(gene.parent.genedata[gene.index, qualifier])
-                gene.parent.genedata[!, qualifier] = convert(Vector{Any}, gene.parent.genedata[!, qualifier])
-                gene.parent.genedata[gene.index, qualifier] = [value]
+            if ismissing(parent(gene).genedata[index(gene), qualifier])
+                parent(gene).genedata[!, qualifier] = convert(Vector{Any}, parent(gene).genedata[!, qualifier])
+                parent(gene).genedata[index(gene), qualifier] = [value]
             else
                 @error "This shouldn't happen"
             end
         else
-            @error "Tried to add a '$T' to '$qualifier::$(typeof(gene.parent.genedata[!, qualifier]))'"
+            @error "Tried to add a '$T' to '$qualifier::$(typeof(parent(gene).genedata[!, qualifier]))'"
         end
     else
-        s = size(gene.parent.genedata, 1)
-        gene.parent.genedata[!, qualifier] = Vector{Union{Missing, T}}(missing, s)
-        gene.parent.genedata[gene.index, qualifier] = value
+        s = size(parent(gene).genedata, 1)
+        parent(gene).genedata[!, qualifier] = Vector{Union{Missing, T}}(missing, s)
+        parent(gene).genedata[index(gene), qualifier] = value
     end
     return value
 end
 
 
 """
-    get(g::Gene, key, default)
+    get(g::AbstractGene, key, default)
 
 Retrieve `key` from `g`. If `key` is missing, return `default`.
 """
-function Base.get(g::Gene, key, default)
+function Base.get(g::AbstractGene, key, default)
     p = getproperty(g, key)
     if ismissing(p)
         return default
@@ -246,23 +259,23 @@ close(writer)
 ```
 """
 function sequence(gene::AbstractGene)
-    ifelse(gene.locus.strand == '-',
-        reverse_complement(gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position]),
-        gene.parent.sequence[gene.parent.genedata[gene.index, :locus].position])
+    ifelse(locus(gene).strand == '-',
+        reverse_complement(parent(gene).sequence[locus(gene).position]),
+        parent(gene).sequence[locus(gene).position])
 end
 
 
 function Base.length(gene::AbstractGene)
-    length(gene.parent.genedata[gene.index, :locus].position)
+    length(locus(gene).position)
 end
 
 
 """
-    iscomplement(gene::Abstract)
+    iscomplement(gene)
 
-Return `true` if `gene.locus.compliment == '-'`, otherwise return `false`.
+Return `true` if `locus(gene).compliment == '-'`, otherwise return `false`.
 """
-iscomplement(gene::AbstractGene) = gene.parent.genedata[gene.index, :locus].strand == '-'
+iscomplement(gene::AbstractGene) = locus(gene).strand == '-'
 
 
 function appendstring(field, v)
@@ -280,13 +293,11 @@ end
 
 function Base.show(io::IO, gene::AbstractGene)
     buf = IOBuffer()
-    print(buf, "     " * rpad(string(gene.feature), 16, ' '))
-    print(buf, gene.locus)
-    for field in names(gene.parent.genedata)
-        if field in [:feature, :locus]
-            continue
-        end
-        v = gene.parent.genedata[gene.index, field]
+    print(buf, "     " * rpad(string(feature(gene)), 16, ' '))
+    print(buf, locus(gene))
+    for field in names(parent(gene).genedata)
+        field in [:feature, :locus] && continue
+        v = parent(gene).genedata[index(gene), field]
         if !ismissing(v)
             if v isa AbstractVector
                 for i in eachindex(v)
@@ -301,8 +312,8 @@ function Base.show(io::IO, gene::AbstractGene)
 end
 
 
-Base.show(io::IO, mime::MIME"text/plain", genes::Array{Gene, 1}) = Base.show(io, genes)
-function Base.show(io::IO, genes::Array{Gene, 1})
+Base.show(io::IO, mime::MIME"text/plain", genes::Array{G, 1}) where {G <: AbstractGene} = Base.show(io, genes)
+function Base.show(io::IO, genes::Array{G, 1}) where {G <: AbstractGene}
     for gene in genes
         show(io, gene)
     end
@@ -407,14 +418,23 @@ function Base.isless(l1::Locus, l2::Locus)
     end
     return false
 end
-Base.isless(g1::Gene, g2::Gene) = ((g1.locus == g2.locus) && (g1.feature == "gene" && g2.feature != "gene")) || (g1.locus < g2.locus)
+Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (feature(g1) == "gene" && feature(g2) != "gene")) || (locus(g1) < locus(g2))
 
 
 function Base.:(==)(x::Locus, y::Locus)
     (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.order == y.order)
 end
 
+function Base.in(loc::Locus, r::UnitRange{Int})
+    loc.position.start in r && loc.position.stop in r
+end
 
-function Base.sort!(G::AbstractArray{Gene}; args...)
-    sort!(G[1].parent.genedata; cols = (:locus, :feature), args...)
+
+index(g::Gene) = getfield(g, :index)
+locus(g::Gene) = getfield(g, :locus)
+feature(g::Gene) = getfield(g, :feature)
+Base.parent(g::Gene) = getfield(g, :parent)
+function Base.parent(gs::AbstractVector{G}) where {G <: AbstractGene}
+    @assert !isempty(gs) "Trying to get parent of empty Array{Gene}"
+    getfield(gs[1], :parent)
 end

@@ -5,9 +5,9 @@ using Test
 @testset "GenomicAnnotations" begin
     @testset "readgbk" begin
         s = "     gene            1..1"
-        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(1:1, '+'))
+        @test GenomicAnnotations.parseposition(s) == (:gene, Locus(1:1, '+'))
         s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenomicAnnotations.parseposition(s) == ("gene", Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
+        @test GenomicAnnotations.parseposition(s) == (:gene, Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
 
 
         chrs = readgbk("example.gbk")
@@ -22,7 +22,7 @@ using Test
     end
 
     @testset "Gene properties" begin
-        @test length(propertynames(chr.genes[1])) == 14
+        @test length(propertynames(chr.genes[1])) == 12
         @test chr.genes[2].locus_tag == "tag01"
         @test (chr.genes[2].locus_tag = "tag01") == "tag01"
         @test begin
@@ -44,16 +44,17 @@ using Test
     end
 
     @testset "Adding/removing genes" begin
-        addgene!(chr, "CDS", Locus(300:390, '+'), locus_tag = "tag04")
+        addgene!(chr, :CDS, Locus(300:390, '+'), locus_tag = "tag04")
         @test chr.genes[end].locus_tag == "tag04"
         delete!(chr.genes[end])
         @test chr.genes[end].locus_tag == "reg01"
     end
 
     @testset "@genes" begin
-        @test @genes(chr, :feature == "CDS") == chr.genes[[2,4,6]]
+        @test @genes(chr, feature(gene) == Ref(:CDS)) == chr.genes[[2,4,6]]
+        @test @genes(chr, feature(gene) == Ref(:CDS)) == @genes(chr, CDS)
         @test @genes(chr, iscomplement(gene)) == chr.genes[[5,6,7]]
-        @test @genes(chr, :feature == "CDS", !iscomplement(gene)) == chr.genes[[2,4]]
+        @test @genes(chr, feature(gene) == Ref(:CDS), !iscomplement(gene)) == chr.genes[[2,4]]
         @test @genes(chr, length(gene) < 300)[1] == chr.genes[2]
         @test length(@genes(chr, get(gene, :locus_tag, "") == "")) == 3
     end
@@ -66,15 +67,15 @@ using Test
         chr.genes[3:4].newproperty .= true
         @test all(chr.genes[3:4].newproperty .== true)
         # Broadcasted assignment with @genes
-        @genes(chr, :feature == "gene").newproperty .= false
+        @genes(chr, gene).newproperty .= false
         @test all(chr.genes[[3,5]].newproperty .== false)
     end
 
     @testset "Locus" begin
-        locus = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
-        @test Locus() == locus
-        @test chr.genes[2].locus < chr.genes[4].locus
-        @test chr.genes[2].locus == chr.genes[2].locus
+        loc = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
+        @test Locus() == loc
+        @test locus(chr.genes[2]) < locus(chr.genes[4])
+        @test locus(chr.genes[2]) == locus(chr.genes[2])
         @test iscomplement(chr.genes[2]) == false
         @test iscomplement(chr.genes[5]) == true
     end
@@ -89,6 +90,6 @@ using Test
         @test chr.sequence == dna""
         @test chr.header == ""
         @test chr.genes == Gene[]
-        @test names(chr.genedata) == [:feature, :locus]
+        @test names(chr.genedata) == []
     end
 end

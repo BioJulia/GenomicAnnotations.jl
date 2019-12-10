@@ -7,6 +7,7 @@ using GZip
 
 export Chromosome, Gene, AbstractGene, GeneDataView, Locus
 export readgbk, sequence, iscomplement, addgene!, pushproperty!, printgbk
+export feature, index, locus
 export @genes
 
 include("types.jl")

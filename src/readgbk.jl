@@ -9,7 +9,7 @@ end
 
 
 """
-Parse lines encoding genomic position, returning the feature as a `String`, and an instance of `Locus`.
+Parse lines encoding genomic position, returning the feature as a `Symbol`, and an instance of `Locus`.
 """
 function parseposition(line::String)
     feature, posstring = split(strip(line), r" +")
@@ -31,7 +31,7 @@ function parseposition(line::String)
             push!(order, r[1]:r[2])
         end
     end
-    return feature, Locus(position, strand, complete_left, complete_right, order, join)
+    return Symbol(feature), Locus(position, strand, complete_left, complete_right, order, join)
 end
 
 
@@ -49,8 +49,8 @@ end
 
 Parse and return one chromosome entry, and the line number that it ends at.
 """
-function parsechromosome(lines)
-    genes = Gene[]
+function parsechromosome(lines, G::Type = Gene)
+    genes = G[]
     iobuffer = IOBuffer()
 	isheader = true
     isfooter = false
@@ -60,10 +60,10 @@ function parsechromosome(lines)
     content = String("")
     header = ""
 
-    feature = ""
+    feature = :source
     locus = Locus()
 
-    chromosome = Chromosome()
+    chromosome = Chromosome{G}()
 
     linecount = 0
     for line in lines
@@ -120,8 +120,9 @@ function parsechromosome(lines)
                     else
                         (qualifier, content) = match(r"^ +/(\S+)=(\S+)$", line).captures
                         try
-                            content = Meta.parse(content)
-                            content isa Expr && throw(Meta.ParseError)
+                            tmpcontent = Meta.parse(content)
+                            tmpcontent isa Expr && throw(Meta.ParseError)
+							content = tmpcontent
                         catch
                             content = Symbol(content)
                         end
@@ -131,7 +132,9 @@ function parsechromosome(lines)
                         spanning = true
                     end
 
-                    pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
+					isempty(names(chromosome.genedata)) ?
+						(chromosome.genedata[!, Symbol(qualifier)] = Union{Missing, typeof(content)}[content]) :
+	                    pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
 
                 else
                     # Qualifiers without a value assigned to them end up here
@@ -148,7 +151,7 @@ function parsechromosome(lines)
                     spanning = false
                 end
                 if eltype(chromosome.genedata[!, Symbol(qualifier)]).b <: AbstractArray
-                    i = chromosome.genes[end].index
+                    i = index(chromosome.genes[end])
                     chromosome.genedata[!, Symbol(qualifier)][end][end] = Base.getproperty(chromosome.genes[end], Symbol(qualifier))[end] * "\n" * content
                 else
                     Base.setproperty!(chromosome.genes[end], Symbol(qualifier), Base.getproperty(chromosome.genes[end], Symbol(qualifier)) * "\n" * content)
@@ -176,10 +179,10 @@ end
 
 Parse GenBank-formatted file `filename`, returning a `Vector{Chromosome}`.
 """
-function readgbk(filename)
+function readgbk(filename, G::Type = Gene)
     gz = filename[end-2:end] == ".gz"
     finished = false
-    chrs = Chromosome[]
+    chrs = Chromosome{G}[]
     if gz
         f = GZip.open(filename)
     else
@@ -191,7 +194,7 @@ function readgbk(filename)
         if currentline >= length(lines)
             break
         end
-        i, chr = parsechromosome(lines[currentline:end])
+        i, chr = parsechromosome(lines[currentline:end], G)
         currentline += i
         push!(chrs, chr)
     end
