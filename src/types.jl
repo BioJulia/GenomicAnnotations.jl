@@ -242,26 +242,18 @@ end
 
 
 """
-    sequence(gene::AbstractGene)
+    sequence(gene::AbstractGene; AA = false)
 
-Return genomic sequence for `gene`.
-
-# Example
-The following code will write the translated sequences of all genes in `chr` to a file:
-```julia
-using FASTX
-writer = FASTA.Writer(open("proteins.fasta", "w"))
-for gene in @genes(chr, iscds)
-    aaseq = translate(sequence(gene))
-    write(writer, FASTA.record(gene.locus_tag, get(gene, :product, ""), aaseq))
-end
-close(writer)
+Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, otherwise it will be returned as a `LongDNASeq`.
 ```
 """
-function sequence(gene::AbstractGene)
-    ifelse(locus(gene).strand == '-',
-        reverse_complement(parent(gene).sequence[locus(gene).position]),
-        parent(gene).sequence[locus(gene).position])
+function sequence(gene::AbstractGene; translate = false)
+    if locus(gene).strand == '-'
+        s = reverse_complement(parent(gene).sequence[locus(gene).position])
+    else
+        s = parent(gene).sequence[locus(gene).position])
+    end
+    translate ? BioSequences.translate(s) : s
 end
 
 

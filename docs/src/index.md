@@ -42,7 +42,7 @@ using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
     for gene in @genes(chr, CDS)
-        aaseq = translate(sequence(gene))
+        aaseq = sequence(gene; translate = true)
         write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
     end
 end
