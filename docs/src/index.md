@@ -5,19 +5,16 @@ GenomicAnnotations is a package for reading, modifying, and writing genomic anno
 
 
 ## Installation
+GenomicAnnotations depends on [BioSequences](https://github.com/BioJulia/BioSequences.jl), which is registered in [BioJuliaRegistry](https://github.com/BioJulia/BioJuliaRegistry). To install it you must first add the registry to Julia's package manager:
 ```julia
 julia>]
+pkg> registry add https://github.com/BioJulia/BioJuliaRegistry.git
 pkg> add GenomicAnnotations
-```
-or
-```julia
-using Pkg
-Pkg.add("GenomicAnnotations")
 ```
 
 
 ## Examples
-GenBank files are read with `readgbk(pathtofile)`, which returns a vector of `Chromosome`s. `gbkfile` can be gzipped as long as the filename ends in ".gz". If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank files are read with `readgbk(input)`, which returns a vector of `Chromosome`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```

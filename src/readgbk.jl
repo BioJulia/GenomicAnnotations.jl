@@ -175,28 +175,36 @@ end
 
 
 """
-    readgbk(filename)
+    readgbk(input, G::Type = Gene; gunzip = false)
 
-Parse GenBank-formatted file `filename`, returning a `Vector{Chromosome}`.
+Parse GenBank-formatted file, returning a `Vector{Chromosome}`. `input` can be a file path or an `IOStream`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Setting `gunzip` to `true` forces this behaviour.
+The type of `AbstractGene` to be used can be specified with `G`, though currently the only option is `Gene`.
 """
-function readgbk(filename, G::Type = Gene)
+function readgbk(filename::AbstractString, G::Type = Gene; gunzip = false)
     gz = filename[end-2:end] == ".gz"
-    finished = false
-    chrs = Chromosome{G}[]
-    if gz
-        f = GZip.open(filename)
+    if gz || gunzip
+        GZip.open(f -> readgbk(f, G), filename)
     else
-        f = open(filename)
+        open(f -> readgbk(f, G), filename)
     end
-    lines = readlines(f)
-    currentline = 1
-    while !finished
-        if currentline >= length(lines)
-            break
-        end
-        i, chr = parsechromosome(lines[currentline:end], G)
-        currentline += i
-        push!(chrs, chr)
-    end
-    return chrs
+end
+
+function readgbk(input::IO, G::Type = Gene; gunzip = false)
+	finished = false
+	chrs = Chromosome{G}[]
+	if gunzip
+		lines = readlines(gzdopen(input))
+	else
+		lines = readlines(input)
+	end
+	currentline = 1
+	while !finished
+		if currentline >= length(lines)
+			break
+		end
+		i, chr = parsechromosome(lines[currentline:end], G)
+		currentline += i
+		push!(chrs, chr)
+	end
+	chrs
 end
