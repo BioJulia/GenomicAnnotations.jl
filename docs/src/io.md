@@ -4,7 +4,7 @@
 Annotation files are read with `readgbk(input)`. Currently this assumes that the file follows standard [GenBank format](http://www.insdc.org/files/feature_table.html#7.1.2).
 
 ```@docs
-readgbk(filename::AbstractString, G::Type = Gene; gunzip = false)
+readgbk
 ```
 
 ## Output
