@@ -1,6 +1,6 @@
 function genes_helper!(ex)
-    if ex isa Expr
-        if ex.args[1] != :Ref
+    if ex isa Expr && !isempty(ex.args)
+        if ex.args[1] ∉ [:Ref, :upstream, :downstream, :neighbours]
             skipgene = ex.args[1] ∉ [:(||), :(&&)]
             skipfirst = ex.head == :call
             genes_special_cases!(ex.args; skipgene = skipgene, skipfirst = skipfirst)
@@ -12,7 +12,22 @@ function genes_helper!(ex)
                 ex.head = :ref
                 empty!(ex.args)
                 push!(ex.args, ex2)
-            elseif ex.args[1] != :get
+            elseif ex.args[1] == :get
+                if length(ex.args) == 3
+                    # Expand `get(s::Symbol, default)` to `get(gene, s::Symbol, default)`
+                    genes_helper!(ex.args[3])
+                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
+                else
+                    genes_helper!(ex.args[2])
+                    genes_helper!(ex.args[4])
+                end
+            elseif ex.args[1] in [:upstream, :downstream, :neighbours]
+                # Expand `upstream(i, f)` to `upstream(gene, f, i)`, etc.
+                if length(ex.args) == 3
+                    feature_function!(ex.args)
+                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
+                end
+            else
                 for i in eachindex(ex.args)[2:end]
                     if ex.args[i] isa QuoteNode
                         ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
@@ -20,11 +35,14 @@ function genes_helper!(ex)
                         genes_helper!(ex.args[i])
                     end
                 end
+            end
+        elseif ex.head == :(.) && ex.args[1] == :get
+            if length(ex.args[2].args) == 2
+                genes_helper!(ex.args[2].args[2])
+                ex.args[2].args = vcat(Expr(:call, :Ref, :gene), ex.args[2].args)
             else
-                # Expand `get(s::Symbol, default)` to `get(gene, s::Symbol, default)`
-                if length(ex.args) == 3
-                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
-                end
+                genes_helper!(ex.args[2].args[1])
+                genes_helper!(ex.args[2].args[3])
             end
         else
             for i in eachindex(ex.args)
@@ -129,6 +147,81 @@ macro genes(chr, exs...)
     end)
 end
 
+
+upstream(f::Function, gene, cond::Function, i) = f(upstream(gene, cond, i))
+upstream(gene, cond::Function, i::Int) = upstream(gene, cond, i:i)[1]
+function upstream(gene, cond::Function, i)
+    ngenes = length(parent(gene).genes)
+    j = 0
+    genes = Gene[]
+    grange = iscomplement(gene) ?
+        parent(gene).genes[mod1.(index(gene) + 1 : index(gene) + ngenes - 2, ngenes)] :
+        parent(gene).genes[reverse(mod1.((index(gene) + 1) : (index(gene) + ngenes - 2), ngenes))]
+    for g in grange
+        if cond(g)
+            j += 1
+            j in i && push!(genes, g)
+        end
+    end
+    return genes
+end
+
+downstream(f::Function, gene, cond::Function, i) = f(downstream(gene, cond, i))
+downstream(gene, cond::Function, i::Int) = downstream(gene, cond, i:i)[1]
+function downstream(gene, cond::Function, i)
+    ngenes = length(parent(gene).genes)
+    j = 0
+    genes = Gene[]
+    grange = !iscomplement(gene) ?
+        parent(gene).genes[mod1.(index(gene) + 1 : index(gene) + ngenes - 2, ngenes)] :
+        parent(gene).genes[reverse(mod1.((index(gene) + 1) : (index(gene) + ngenes - 2), ngenes))]
+    for g in grange
+        if cond(g)
+            j += 1
+            j in i && push!(genes, g)
+        end
+    end
+    return genes
+end
+
+neighbours(f::Function, gene, cond::Function, i) = f(neighbours(gene, cond, i))
+function neighbours(gene, cond::Function, i)
+    vcat(upstream(gene, cond, i), downstream(gene, cond, i))
+end
+
+
+function feature_function!(exs; skipgene = false, skipfirst = true)
+    i = 2
+    ex = exs[i]
+    if ex isa Symbol
+        if ex == :CDS
+            exs[i] = :(GenomicAnnotations.feature(g) == :CDS)
+        elseif ex == :(!CDS)
+            exs[i] = :(GenomicAnnotations.feature(g) != :CDS)
+        elseif ex == :rRNA
+            exs[i] = :(GenomicAnnotations.feature(g) == :rRNA)
+        elseif ex == :(!rRNA)
+            exs[i] = :(GenomicAnnotations.feature(g) != :rRNA)
+        elseif ex == :tRNA
+            exs[i] = :(GenomicAnnotations.feature(g) == :tRNA)
+        elseif ex == :(!tRNA)
+            exs[i] = :(GenomicAnnotations.feature(g) != :tRNA)
+        elseif ex == :gene && !skipgene
+            exs[i] = :(GenomicAnnotations.feature(g) == :gene)
+        elseif ex == :(!gene)
+            exs[i] = :(GenomicAnnotations.feature(g) != :gene)
+        elseif ex == :regulatory
+            exs[i] = :(GenomicAnnotations.feature(g) == :regulatory)
+        elseif ex == :(!regulatory)
+            exs[i] = :(GenomicAnnotations.feature(g) != :regulatory)
+        elseif ex == :source
+            exs[i] = :(GenomicAnnotations.feature(g) == :source)
+        elseif ex == :(!source)
+            exs[i] = :(GenomicAnnotations.feature(g) != :source)
+        end
+        exs[i] = Expr(:(->), :g, Expr(:block, exs[i]))
+    end
+end
 
 
 function genes_special_cases!(exs; skipgene = false, skipfirst = true)

@@ -60,7 +60,8 @@ mutable struct Chromosome{G <: AbstractGene}
     header::String
     genes::Vector{G}
     genedata::DataFrame
-    Chromosome{G}(name, sequence, header, genes::Vector{G}, genedata) where G = new(name, sequence, header, genes, genedata)
+    circular::Bool
+    Chromosome{G}(name, sequence, header, genes::Vector{G}, genedata, circular) where G = new(name, sequence, header, genes, genedata, circular)
 end
 
 
@@ -75,7 +76,10 @@ struct Gene <: AbstractGene
 end
 
 
-Chromosome{Gene}() = Chromosome{Gene}("", dna"", "", Gene[], DataFrame())
+Chromosome{Gene}() = Chromosome{Gene}("", dna"", "", Gene[], DataFrame(), false)
+
+
+iscircular(c::Chromosome{T}) where {T<:AbstractGene} = c.circular
 
 
 """
@@ -257,9 +261,8 @@ function sequence(gene::AbstractGene; translate = false)
 end
 
 
-function Base.length(gene::AbstractGene)
-    length(locus(gene).position)
-end
+Base.length(gene::AbstractGene) = length(locus(gene))
+Base.length(locus::Locus) = length(locus.position)
 
 
 """
@@ -425,9 +428,9 @@ function Base.:(==)(x::Locus, y::Locus)
     (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.order == y.order)
 end
 
-function Base.in(loc::Locus, r::UnitRange{Int})
-    loc.position.start in r && loc.position.stop in r
-end
+Base.in(loc::Locus, r::UnitRange{Int}) = loc.position.start in r && loc.position.stop in r
+Base.in(loc1::Locus, loc2::Locus) = loc1 in loc2.position
+Base.intersect(loc1::Locus, loc2::Locus) = intersect(loc1.position, loc2.position)
 
 
 index(g::Gene) = getfield(g, :index)
