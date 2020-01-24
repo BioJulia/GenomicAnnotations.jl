@@ -258,8 +258,12 @@ function parsechromosome_gff(lines, G)
 			end
 			if attributes != "."
 				for attribute in split(attributes, ';')
-					qualifier, value = split(attribute, '=')
-					pushproperty!(chr.genes[end], Symbol(qualifier), String(value))
+					isempty(attribute) && continue
+					qualifier, values = split(attribute, '=')
+					values = split(values, ',')
+					for value in values
+						pushproperty!(chr.genes[end], Symbol(qualifier), String(value))
+					end
 				end
 			end
 		elseif isfooter
@@ -278,7 +282,9 @@ function parsechromosome_gff(lines, G)
 			end
 		end
 	end
-	chrs[findfirst(chr -> chr.name == currentfasta, chrs)].sequence = LongDNASeq(String(take!(iobuffer)))
+	if !isempty(currentfasta)
+		chrs[findfirst(chr -> chr.name == currentfasta, chrs)].sequence = LongDNASeq(String(take!(iobuffer)))
+	end
 	headerstring = String(take!(header))
 	for chr in chrs
 		chr.header = headerstring
@@ -330,9 +336,10 @@ function gffstring(gene::Gene)
 				print(buf, ";")
 			end
             if v isa AbstractVector
+				print(buf, field, "=")
                 for i in eachindex(v)
-					print(buf, field, "=", v[i])
-					i != lastindex(v) && print(buf, ";")
+					print(buf, v[i])
+					i == lastindex(v) ? print(buf, ";") : print(buf, ",")
                 end
             else
 				print(buf, field, "=", v)
@@ -350,6 +357,7 @@ function gffstring(gene::Gene)
 		String(take!(buf))], '\t')
 end
 
+printgff(filepath::AbstractString, chrs) = printgff(open(filepath, "w"), chrs)
 printgff(io::IO, chr::Chromosome) = printgff(io, [chr])
 function printgff(io::IO, chrs::AbstractVector{Chromosome{Gene}})
 	iobuffer = IOBuffer()
@@ -362,11 +370,13 @@ function printgff(io::IO, chrs::AbstractVector{Chromosome{Gene}})
 		end
 	end
 	### Footer
-	println(iobuffer, "##FASTA")
-	for chr in chrs
-		println(iobuffer, ">", chr.name)
-		for s in Iterators.partition(chr.sequence, 80)
-			println(iobuffer, join(s))
+	if !all(isempty(chr.sequence) for chr in chrs)
+		println(iobuffer, "##FASTA")
+		for chr in chrs
+			println(iobuffer, ">", chr.name)
+			for s in Iterators.partition(chr.sequence, 80)
+				println(iobuffer, join(s))
+			end
 		end
 	end
 	print(io, String(take!(iobuffer)))
