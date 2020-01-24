@@ -225,32 +225,22 @@ end
 
 
 function genes_special_cases!(exs; skipgene = false, skipfirst = true)
+    features = [:CDS, :rRNA, :tRNA, :mRNA, :exon, :intron, :regulatory, :source, :repeat_region]
     for (i, ex) in enumerate(exs)
         skipfirst && i == 1 && continue
-        if ex == :CDS
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:CDS))
-        elseif ex == :(!CDS)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:CDS))
-        elseif ex == :rRNA
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:rRNA))
-        elseif ex == :(!rRNA)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:rRNA))
-        elseif ex == :tRNA
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:tRNA))
-        elseif ex == :(!tRNA)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:tRNA))
-        elseif ex == :gene && !skipgene
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:gene))
-        elseif ex == :(!gene)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:gene))
-        elseif ex == :regulatory
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:regulatory))
-        elseif ex == :(!regulatory)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:regulatory))
-        elseif ex == :source
-            exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:source))
-        elseif ex == :(!source)
-            exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:source))
+        if ex isa Symbol
+            if ex == :gene && !skipgene
+                exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:gene))
+            elseif ex in features
+                exs[i] = :(GenomicAnnotations.feature(gene) == Ref($(QuoteNode(ex))))
+            end
+        elseif ex isa Expr && ex.head == :call && ex.args[1] == :(!)
+            feature = ex.args[2]
+            if feature == :gene
+                exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:gene))
+            elseif feature in features
+                exs[i] = :(GenomicAnnotations.feature(gene) != Ref($(QuoteNode(feature))))
+            end
         end
     end
 end
@@ -264,7 +254,6 @@ end
 #   D_segment
 #   gap
 #   iDNA
-#   intron
 #   J_segment
 #   mat_peptide
 #   misc_binding
@@ -275,7 +264,6 @@ end
 #   misc_structure
 #   mobile_element
 #   modified_base
-#   mRNA
 #   ncRNA
 #   N_region
 #   old_sequence
@@ -287,7 +275,6 @@ end
 #   primer_bind
 #   propeptide
 #   protein_bind
-#   repeat_region
 #   rep_origin
 #   S_region
 #   sig_peptide
