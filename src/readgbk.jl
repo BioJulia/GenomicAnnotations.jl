@@ -247,11 +247,9 @@ function parsechromosome_gff(lines, G)
 			addgene!(chr, Symbol(feature), locus)
 			if source != "." && ismissing(chr.genes[end].source)
 				chr.genes[end].source = source
-				# pushproperty!(chr.genes[end], :source, String(source))
 			end
 			if score != "." && ismissing(chr.genes[end].score)
 				chr.genes[end].score = parse(Float64, score)
-				# pushproperty!(chr.genes[end], :score, String(score))
 			end
 			if phase != "."
 				chr.genes[end].phase = parse(Int, phase)
@@ -311,14 +309,6 @@ function readgff(input::IO, G::Type; gunzip = false)
 		lines = readlines(input)
 	end
 	currentline = 1
-	# while !finished
-	# 	if currentline >= length(lines)
-	# 		break
-	# 	end
-	# 	i, chr = parsechromosome_gff(lines[currentline:end], G)
-	# 	currentline += i
-	# 	push!(chrs, chr)
-	# end
 	parsechromosome_gff(lines, G)
 end
 
