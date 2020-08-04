@@ -294,6 +294,7 @@ function appendstring(field, v)
     return s
 end
 
+
 function Base.show(io::IO, gene::AbstractGene)
     buf = IOBuffer()
     print(buf, "     " * rpad(string(feature(gene)), 16, ' '))
@@ -350,64 +351,6 @@ function Base.show(io::IO, locus::Locus)
     !locus.complete_right   && (s *= "<")
     locus.strand == '-'     && (s *= ")")
     print(io, s)
-end
-
-
-function formatsequence(sequence, io = IOBuffer)
-    p = length(string(length(sequence))) + 2
-    if length(sequence) > 60
-        intervals = [i:i+60 for i in range(1; step = 60, stop = length(sequence)-60)]
-        for interval in intervals
-            println(io, lpad(string(first(interval)), p, ' '), " ", sequence[interval[1:10]],
-                " ", sequence[interval[11:20]], " ", sequence[interval[21:30]],
-                " ", sequence[interval[31:40]], " ", sequence[interval[41:50]],
-                " ", sequence[interval[51:60]])
-        end
-    else
-        intervals = [1:1]
-    end
-    i = intervals[end].stop
-    if i <= length(sequence)
-        print(io, lpad(i, p, ' '), " ")
-        j = 0
-        while i+j <= length(sequence)
-            print(io, sequence[i+j])
-            (j+1) % 10 == 0 && print(io, " ")
-            j += 1
-        end
-    end
-    return io
-end
-
-
-"""
-    printgbk([io], chr)
-
-Print `chr` in GenBank format.
-"""
-function printgbk(chrs::AbstractVector{C}) where {C <: Chromosome}
-    io = IOBuffer()
-    printgbk(io, chrs)
-end
-function printgbk(io::IO, chrs::AbstractVector{C}) where {C <: Chromosome}
-    for chr in chrs
-        printgbk(io, chr)
-    end
-    return io
-end
-function printgbk(chr::C) where {C <: Chromosome}
-    io = IOBuffer()
-    printgbk(io, chr)
-end
-function printgbk(io::IO, chr::C) where {C <: Chromosome}
-    println(io, chr.header)
-    println(io, rpad("FEATURES", 21, ' '), "Location/Qualifiers")
-    println(io, chr.genes)
-    println(io, "ORIGIN")
-    formatsequence(chr.sequence, io)
-    println(io)
-    println(io, "//")
-    return io
 end
 
 

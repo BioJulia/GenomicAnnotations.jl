@@ -14,6 +14,7 @@ export readgff, printgff
 include("types.jl")
 include("genedataview.jl")
 include("readgbk.jl")
+include("readgff.jl")
 include("macro.jl")
 
 end #module
