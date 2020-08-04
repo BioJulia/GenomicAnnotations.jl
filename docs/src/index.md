@@ -1,20 +1,18 @@
 # GenomicAnnotations.jl
 
 ## Description
-GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank format.
+GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank and GFF3 file formats.
 
 
 ## Installation
-GenomicAnnotations depends on [BioSequences](https://github.com/BioJulia/BioSequences.jl), which is registered in [BioJuliaRegistry](https://github.com/BioJulia/BioJuliaRegistry). To install it you must first add the registry to Julia's package manager:
 ```julia
 julia>]
-pkg> registry add https://github.com/BioJulia/BioJuliaRegistry.git
 pkg> add GenomicAnnotations
 ```
 
 
 ## Examples
-GenBank files are read with `readgbk(input)`, which returns a vector of `Chromosome`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Chromosome`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
@@ -57,7 +55,7 @@ delete!(@genes(chr, :pseudo))
 delete!(@genes(chr, length(gene) <= 60))
 ```
 
-Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `printgbk(io, chr)` can be used to write them to a file.
+Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `printgbk(io, chr)` can be used to write them to a file. `printgff(io, chr)` prints the annotations as GFF3, in which case the GenBank header is lost.
 ```julia
 println(chr.genes[1])
 println(@genes(chr, CDS))
