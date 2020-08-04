@@ -232,7 +232,12 @@ function printgbk(chr::C) where {C <: Chromosome}
     printgbk(io, chr)
 end
 function printgbk(io::IO, chr::C) where {C <: Chromosome}
-    println(io, chr.header)
+	if chr.header[1] != '#'
+	    println(io, chr.header)
+	else
+		### GFF3 header
+		println(io, "LOCUS       unknown", lpad(length(chr.sequence), 10, ' '), " bp     DNA")
+	end
     println(io, rpad("FEATURES", 21, ' '), "Location/Qualifiers")
     println(io, chr.genes)
     println(io, "ORIGIN")
