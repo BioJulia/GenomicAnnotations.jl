@@ -50,7 +50,6 @@ end
 Parse and return one chromosome entry, and the line number that it ends at.
 """
 function parsechromosome(lines, G::Type = Gene)
-    genes = G[]
     iobuffer = IOBuffer()
 	isheader = true
     isfooter = false
