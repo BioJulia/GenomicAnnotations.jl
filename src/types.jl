@@ -281,18 +281,56 @@ Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
 iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :ribosomal_slippage, false)) && locus(gene).complete_right && locus(gene).complete_left
 
 
-function appendstring(field, v)
-    s = ""
-    if v isa Bool
-        s *= "\n" * join(fill(' ', 21)) * "/$field"
-    elseif v isa Union{Number, Symbol}
-        s *= "\n" * join(fill(' ', 21)) * "/$field=" * string(v)
-    else
-        v = replace(v, "\n" => "\n" * join(fill(' ', 21)))
-        s *= "\n" * join(fill(' ', 21)) * "/$field=\"" * v * "\""
-    end
-    return s
+function appendstring(field, v::Bool)
+    return "\n" * join(fill(' ', 21)) * "/$field"
 end
+function appendstring(field, v::Union{Number, Symbol})
+    return "\n" * join(fill(' ', 21)) * "/$field=" * string(v)
+end
+function appendstring(field, v)
+	v = _multiline(v, field)
+    v = replace(v, "\n" => "\n" * join(fill(' ', 21)))
+    return "\n" * join(fill(' ', 21)) * "/$field=\"" * v * "\""
+end
+
+
+function _findbreak(v, t)
+	i = t == 59 ?
+		findlast('\n', v) :
+		1
+	j = i+t-1
+	j >= lastindex(v) && return nothing
+	x = findlast(c -> c == ' ' || c == '-', v[1:j])
+	if isnothing(x)
+		return j:j+1
+	elseif x == ' '
+		return x-1:x+1
+	else
+		return x:x+1
+	end
+end
+
+
+"""
+	_multiline(v, s::Symbol)
+
+Return a `String` with newlines and spaces added so that it conforms to the GenBank line width.
+"""
+function _multiline(v, s)
+	v = string(v)
+	s = string(s)
+	if length(v) + length(s) > 54 && !occursin('\n', v)
+		b = _findbreak(v, 55 - length(s))
+		v = v[1:b.start] * "\n" * v[b.stop:end]
+		b = _findbreak(v, 59)
+		while !isnothing(b) && b.start < length(v)
+			v = v[1:b.start] * "\n" * v[b.stop:end]
+			b = _findbreak(v, 59)
+		end
+	end
+	return v
+end
+
 
 function Base.show(io::IO, gene::AbstractGene)
     buf = IOBuffer()
@@ -350,64 +388,6 @@ function Base.show(io::IO, locus::Locus)
     !locus.complete_right   && (s *= "<")
     locus.strand == '-'     && (s *= ")")
     print(io, s)
-end
-
-
-function formatsequence(sequence, io = IOBuffer)
-    p = length(string(length(sequence))) + 2
-    if length(sequence) > 60
-        intervals = [i:i+60 for i in range(1; step = 60, stop = length(sequence)-60)]
-        for interval in intervals
-            println(io, lpad(string(first(interval)), p, ' '), " ", sequence[interval[1:10]],
-                " ", sequence[interval[11:20]], " ", sequence[interval[21:30]],
-                " ", sequence[interval[31:40]], " ", sequence[interval[41:50]],
-                " ", sequence[interval[51:60]])
-        end
-    else
-        intervals = [1:1]
-    end
-    i = intervals[end].stop
-    if i <= length(sequence)
-        print(io, lpad(i, p, ' '), " ")
-        j = 0
-        while i+j <= length(sequence)
-            print(io, sequence[i+j])
-            (j+1) % 10 == 0 && print(io, " ")
-            j += 1
-        end
-    end
-    return io
-end
-
-
-"""
-    printgbk([io], chr)
-
-Print `chr` in GenBank format.
-"""
-function printgbk(chrs::AbstractVector{C}) where {C <: Chromosome}
-    io = IOBuffer()
-    printgbk(io, chrs)
-end
-function printgbk(io::IO, chrs::AbstractVector{C}) where {C <: Chromosome}
-    for chr in chrs
-        printgbk(io, chr)
-    end
-    return io
-end
-function printgbk(chr::C) where {C <: Chromosome}
-    io = IOBuffer()
-    printgbk(io, chr)
-end
-function printgbk(io::IO, chr::C) where {C <: Chromosome}
-    println(io, chr.header)
-    println(io, rpad("FEATURES", 21, ' '), "Location/Qualifiers")
-    println(io, chr.genes)
-    println(io, "ORIGIN")
-    formatsequence(chr.sequence, io)
-    println(io)
-    println(io, "//")
-    return io
 end
 
 

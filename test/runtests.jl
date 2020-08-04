@@ -17,6 +17,20 @@ using Test
 
     chr = readgbk("example.gbk")[1]
 
+    @testset "readgff" begin
+        open("example.gff", "w") do f
+            printgff(f, chr)
+        end
+        gff = readgff("example.gff")[1]
+        @test begin
+            gbkbuf = IOBuffer()
+            gffbuf = IOBuffer()
+            print(gbkbuf, chr.genes[1:4])
+            print(gffbuf, chr.genes[1:4])
+            String(take!(gbkbuf)) == String(take!(gffbuf))
+        end
+    end
+
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))
     end
