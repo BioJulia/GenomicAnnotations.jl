@@ -22,7 +22,13 @@ using Test
             printgff(f, chr)
         end
         gff = readgff("example.gff")[1]
-        @test gff.genes == chr.genes
+        @test begin
+            gbkbuf = IOBuffer()
+            gffbuf = IOBuffer()
+            print(gbkbuf, chr.genes[1:4])
+            print(gffbuf, chr.genes[1:4])
+            String(take!(gbkbuf)) == String(take!(gffbuf))
+        end
     end
 
     @testset "Extended methods" begin

@@ -111,8 +111,8 @@ Remove newlines, replacing them with spaces when it seems appropriate.
 function _oneline(v::AbstractString)
 	R = split(v, '\n')
 	buf = IOBuffer()
-	for r in R
-		if r[end] == '-' || occursin(' ', r)
+	for (i, r) in enumerate(R)
+		if i != lastindex(R) && (r[end] == '-' || occursin(' ', r))
 			print(buf, r, " ")
 		else
 			print(buf, r)
@@ -165,7 +165,7 @@ function printgff(io::IO, chrs::AbstractVector{Chromosome{Gene}})
 	if chrs[1].header[1] == '#'
 		print(iobuffer, chrs[1].header)
 	else
-		print(iobuffer, "##gff-version 3")
+		println(iobuffer, "##gff-version 3")
 	end
 	### Body
 	for chr in chrs
