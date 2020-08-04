@@ -17,6 +17,14 @@ using Test
 
     chr = readgbk("example.gbk")[1]
 
+    @testset "readgff" begin
+        open("example.gff", "w") do f
+            printgff(f, chr)
+        end
+        gff = readgff("example.gff")[1]
+        @test gff.genes == chr.genes
+    end
+
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))
     end
