@@ -83,7 +83,6 @@ end
 Parse GFF3-formatted file, returning a `Vector{Chromosome}`. `input` can be a file path or an `IOStream`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Setting `gunzip` to `true` forces this behaviour.
 The type of `AbstractGene` to be used can be specified with `G`, though currently the only option is `Gene`.
 """
-f
 function readgff(filename::AbstractString, G::Type = Gene; gunzip = false)
 	gz = filename[end-2:end] == "gz"
 	if gz || gunzip
