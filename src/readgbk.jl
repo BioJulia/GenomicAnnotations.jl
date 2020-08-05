@@ -213,10 +213,16 @@ end
 
 
 """
-    printgbk([io], chr)
+    printgbk(io::IO, chr)
+    printgbk(path::AbstractString, chr)
 
 Print `chr` in GenBank format.
 """
+function printgbk(path::AbstractString, chrs)
+	open(path, "w") do f
+		printgbk(f, chrs)
+	end
+end
 function printgbk(chrs::AbstractVector{C}) where {C <: Chromosome}
     io = IOBuffer()
     printgbk(io, chrs)

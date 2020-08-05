@@ -157,6 +157,17 @@ function gffstring(gene::Gene)
 		String(take!(buf))], '\t')
 end
 
+"""
+    printgff(io::IO, chr)
+    printgff(path::AbstractString, chr)
+
+Print `chr` in GFF3 format.
+"""
+function printgff(path::AbstractString, chrs)
+	open(path, "w") do f
+		printgff(f, chrs)
+	end
+end
 printgff(filepath::AbstractString, chrs) = printgff(open(filepath, "w"), chrs)
 printgff(io::IO, chr::Chromosome) = printgff(io, [chr])
 function printgff(io::IO, chrs::AbstractVector{Chromosome{Gene}})
