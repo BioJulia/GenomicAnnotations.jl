@@ -30,3 +30,12 @@ addphobius!(chrs, "phobius.txt")
 
 printgbk("updated_genome.gbk", chrs)
 ```
+
+
+## Converting between formats
+Note that GenBank and GFF3 headers do not contain the same information, thus all information in the header is lost when saving annotations as another format.
+```julia
+using GenomicAnnotations
+chrs = readgbk("genome.gbk")
+printgff("genome.gff", chrs)
+```
