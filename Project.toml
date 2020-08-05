@@ -10,7 +10,7 @@ GZip = "92fee26a-97fe-5a0c-ad85-20a5f3185b63"
 
 [compat]
 BioSequences = "2"
-DataFrames = "0.19 0.20"
+DataFrames = "0.19, 0.20"
 julia = "1"
 GZip = "0.5"
 
