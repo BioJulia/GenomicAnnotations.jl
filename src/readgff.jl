@@ -173,7 +173,7 @@ printgff(io::IO, chr::Chromosome) = printgff(io, [chr])
 function printgff(io::IO, chrs::AbstractVector{Chromosome{Gene}})
 	iobuffer = IOBuffer()
 	### Header
-	if chrs[1].header[1] == '#'
+	if chrs[1].header[1:15] == "#gff-version 3\n"
 		print(iobuffer, chrs[1].header)
 	else
 		println(iobuffer, "##gff-version 3")
