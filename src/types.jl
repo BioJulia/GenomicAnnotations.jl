@@ -142,7 +142,7 @@ end
 
 
 function Base.propertynames(gene::G) where {G <: AbstractGene}
-    names(parent(gene).genedata)
+    propertynames(parent(gene).genedata)
 end
 
 
@@ -248,7 +248,7 @@ end
 """
     sequence(gene::AbstractGene; translate = false)
 
-Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, otherwise it will be returned as a `LongDNASeq`.
+Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, excluding the stop, otherwise it will be returned as a `LongDNASeq` (including the stop codon).
 ```
 """
 function sequence(gene::AbstractGene; translate = false)
@@ -257,7 +257,7 @@ function sequence(gene::AbstractGene; translate = false)
     else
         s = parent(gene).sequence[locus(gene).position]
     end
-    translate ? BioSequences.translate(s) : s
+    translate ? BioSequences.translate(s)[1:end-1] : s
 end
 
 
@@ -299,6 +299,7 @@ function _findbreak(v, t)
 		findlast('\n', v) :
 		1
 	j = i+t-1
+	# j >= lastindex(v) && return nothing
 	j >= lastindex(v) && return nothing
 	x = findlast(c -> c == ' ' || c == '-', v[1:j])
 	if isnothing(x)
@@ -319,7 +320,7 @@ Return a `String` with newlines and spaces added so that it conforms to the GenB
 function _multiline(v, s)
 	v = string(v)
 	s = string(s)
-	if length(v) + length(s) > 54 && !occursin('\n', v)
+	if length(v) + length(s) > 55 && !occursin('\n', v)
 		b = _findbreak(v, 55 - length(s))
 		v = v[1:b.start] * "\n" * v[b.stop:end]
 		b = _findbreak(v, 59)
@@ -411,7 +412,7 @@ end
 Base.in(loc::Locus, r::UnitRange{Int}) = loc.position.start in r && loc.position.stop in r
 Base.in(loc1::Locus, loc2::Locus) = loc1 in loc2.position
 Base.intersect(loc1::Locus, loc2::Locus) = intersect(loc1.position, loc2.position)
-
+Base.iterate(loc::Locus) = iterate(loc.position)
 
 index(g::Gene) = getfield(g, :index)
 locus(g::Gene) = getfield(g, :locus)
