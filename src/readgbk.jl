@@ -3,7 +3,8 @@ Return the LOCUS entry of the header.
 """
 function parseheader(header::String)
     lines = split(header, "\n")
-    locus = split(lines[1], r" +")[2]
+	firstline = lines[findfirst(line -> occursin("LOCUS", line), lines)]
+    locus = split(firstline, r" +")[2]
     return locus
 end
 
@@ -67,6 +68,10 @@ function parsechromosome(lines, G::Type = Gene)
     linecount = 0
     for line in lines
         linecount += 1
+
+		if length(line) == 0
+			continue
+		end
 
         # Catch cases where there's no header
         if linecount == 1 && occursin(r"gene", line)

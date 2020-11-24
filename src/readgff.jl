@@ -11,6 +11,9 @@ function parsechromosome_gff(lines, G)
 	currentchr = 0
 	currentfasta = ""
 	for (linecount, line) in enumerate(lines)
+		if length(line) == 0
+			continue
+		end
 		# Store the header
 		if line[1:2] == "##" && line != "##FASTA"
 			isheader = true
