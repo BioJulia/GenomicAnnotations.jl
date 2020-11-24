@@ -116,7 +116,7 @@ Delete `gene` from `parent(gene)`. Warning: does not work when broadcasted! Use
 """
 function Base.delete!(gene::AbstractGene)
     i = index(gene)
-    deleterows!(parent(gene).genedata, i)
+    delete!(parent(gene).genedata, i)
     deleteat!(parent(gene).genes, lastindex(parent(gene).genes))
     nothing
 end
@@ -134,7 +134,7 @@ delete!(@genes(chr, length(gene) <= 60))
 """
 function Base.delete!(genes::AbstractArray{Gene, 1})
     indices = index(gene)
-    DataFrames.deleterows!(parent(genes).genedata, Int.(indices))
+    DataFrames.delete!(parent(genes).genedata, Int.(indices))
     lastindices = length(parent(genes).genes) - length(indices) + 1 : length(parent(genes).genes)
     deleteat!(parent(genes).genes, lastindices)
     nothing
