@@ -1,24 +1,24 @@
 # GenBank Writer
 
 struct Writer{S <: TranscodingStream} <: BioGenerics.IO.AbstractWriter
-	output::S
+    output::S
 end
 
 function BioGenerics.IO.stream(writer::Writer)
-	return writer.output
+    return writer.output
 end
 
 function Writer(output::IO)
-	if output isa TranscodingStream
-		return Writer{typeof(output)}(stream)
-	else
-		stream = TranscodingStreams.NoopStream(output)
-		return Writer{typeof(stream)}(stream)
-	end
+    if output isa TranscodingStream
+        return Writer{typeof(output)}(stream)
+    else
+        stream = TranscodingStreams.NoopStream(output)
+        return Writer{typeof(stream)}(stream)
+    end
 end
 
 function Base.write(writer::Writer, record::Record)
-	printgbk(writer.output, record)
+    printgbk(writer.output, record)
 end
 
 """
@@ -28,9 +28,9 @@ end
 Print `chr` in GenBank format.
 """
 function printgbk(path::AbstractString, chrs)
-	open(path, "w") do f
-		printgbk(f, chrs)
-	end
+    open(path, "w") do f
+        printgbk(f, chrs)
+    end
 end
 function printgbk(chrs::AbstractVector{C}) where {C <: Record}
     io = IOBuffer()
@@ -47,12 +47,12 @@ function printgbk(chr::C) where {C <: Record}
     printgbk(io, chr)
 end
 function printgbk(io::IO, chr::C) where {C <: Record}
-	if chr.header[1] != '#'
-	    println(io, chr.header)
-	else
-		### GFF3 header
-		println(io, "LOCUS       unknown", lpad(length(chr.sequence), 10, ' '), " bp     DNA")
-	end
+    if chr.header[1] != '#'
+        println(io, chr.header)
+    else
+        ### GFF3 header
+        println(io, "LOCUS       unknown", lpad(length(chr.sequence), 10, ' '), " bp     DNA")
+    end
     println(io, rpad("FEATURES", 21, ' '), "Location/Qualifiers")
     println(io, chr.genes)
     println(io, "ORIGIN")

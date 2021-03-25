@@ -288,48 +288,9 @@ function appendstring(field, v::Union{Number, Symbol})
     return "\n" * join(fill(' ', 21)) * "/$field=" * string(v)
 end
 function appendstring(field, v)
-	v = _multiline(v, field)
+    v = multiline(v, field)
     v = replace(v, "\n" => "\n" * join(fill(' ', 21)))
     return "\n" * join(fill(' ', 21)) * "/$field=\"" * v * "\""
-end
-
-
-function _findbreak(v, t)
-	i = t == 59 ?
-		findlast('\n', v) :
-		1
-	j = i+t-1
-	# j >= lastindex(v) && return nothing
-	j >= lastindex(v) && return nothing
-	x = findlast(c -> c == ' ' || c == '-', v[1:j])
-	if isnothing(x)
-		return j:j+1
-	elseif x == ' '
-		return x-1:x+1
-	else
-		return x:x+1
-	end
-end
-
-
-"""
-	_multiline(v, s::Symbol)
-
-Return a `String` with newlines and spaces added so that it conforms to the GenBank line width.
-"""
-function _multiline(v, s)
-	v = string(v)
-	s = string(s)
-	if length(v) + length(s) > 55 && !occursin('\n', v)
-		b = _findbreak(v, 55 - length(s))
-		v = v[1:b.start] * "\n" * v[b.stop:end]
-		b = _findbreak(v, 59)
-		while !isnothing(b) && b.start < length(v)
-			v = v[1:b.start] * "\n" * v[b.stop:end]
-			b = _findbreak(v, 59)
-		end
-	end
-	return v
 end
 
 

@@ -1,48 +1,48 @@
 # GenBank Reader
 
 struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
-	io::S
+    io::S
 end
 
 function Reader(input::IO)
-	if input isa TranscodingStream
-		Reader(input)
-	else
-		stream = TranscodingStreams.NoopStream(input)
-		Reader(stream)
-	end
+    if input isa TranscodingStream
+        Reader(input)
+    else
+        stream = TranscodingStreams.NoopStream(input)
+        Reader(stream)
+    end
 end
 
 function Base.eltype(::Type{<:Reader})
-	return Record
+    return Record
 end
 
 function Base.close(reader::Reader)
-	close(reader.io)
+    close(reader.io)
 end
 
 function Base.open(::Type{<:Reader}, input::AbstractString)
-	if input[end-2:end] == ".gz"
-		return Reader(GzipDecompressorStream(open(input)))
-	else
-		return Reader(TranscodingStreams.NoopStream(open(input)))
-	end
+    if input[end-2:end] == ".gz"
+        return Reader(GzipDecompressorStream(open(input)))
+    else
+        return Reader(TranscodingStreams.NoopStream(open(input)))
+    end
 end
 
 function BioGenerics.IO.stream(reader::Reader)
-	reader.io
+    reader.io
 end
 
 function Base.iterate(reader::Reader, nextone::Record = Record())
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
-	return nextone, Record()
+    return nextone, Record()
 end
 
 function BioGenerics.IO.tryread!(reader::Reader, output)
-	record = parsechromosome!(reader.io, output)
-	return record
+    record = parsechromosome!(reader.io, output)
+    return record
 end
 
 """
@@ -50,7 +50,7 @@ Return the LOCUS entry of the header.
 """
 function parseheader(header::String)
     lines = split(header, "\n")
-	firstline = lines[findfirst(line -> occursin("LOCUS", line), lines)]
+    firstline = lines[findfirst(line -> occursin("LOCUS", line), lines)]
     locus = split(firstline, r" +")[2]
     return locus
 end
@@ -72,7 +72,7 @@ function parseposition(line::String)
     complete_left = !occursin('<', posstring)
     complete_right = !occursin('>', posstring)
     order = Vector{UnitRange{Int}}()
-	join = occursin("join", posstring)
+    join = occursin("join", posstring)
     if join || occursin("order", posstring)
         for m in eachmatch(r"\d+(\.\.|\^)\d+", posstring)
             r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
@@ -98,7 +98,7 @@ end
 Parse and return one chromosome entry, and the line number that it ends at.
 """
 function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
-	eof(stream) && return nothing
+    eof(stream) && return nothing
     iobuffer = IOBuffer()
     isheader = true
     isfooter = false
@@ -113,13 +113,13 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 
 
     linecount = 0
-	while !eof(stream)
-		line = readline(stream)
+    while !eof(stream)
+        line = readline(stream)
         linecount += 1
 
-		if length(line) == 0
-			continue
-		end
+        if length(line) == 0
+            continue
+        end
 
         # Catch cases where there's no header
         if linecount == 1 && occursin(r"gene", line)
@@ -127,21 +127,21 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         end
 
         ### HEADER
-		if isheader && occursin(r"FEATURES", line)
+        if isheader && occursin(r"FEATURES", line)
             chromosome.header = String(take!(iobuffer))
-			isheader = false
+            isheader = false
 
         elseif isheader
             linecount == 1 ? print(iobuffer, line) : print(iobuffer, '\n', line)
 
         # Check if the footer has been reached
-		elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"ORIGIN", line))
-			# Stop parsing the file when the list of genes is over
+        elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"ORIGIN", line))
+            # Stop parsing the file when the list of genes is over
             isfooter = true
-			iobuffer = IOBuffer()
+            iobuffer = IOBuffer()
 
         ### BODY
-		elseif !isheader && !isfooter
+        elseif !isheader && !isfooter
             if position_spanning && occursin(r"  /", line)
                 position_spanning = false
                 spanningline = filter(x -> x != ' ', String(take!(iobuffer)))
@@ -174,7 +174,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                         try
                             tmpcontent = Meta.parse(content)
                             tmpcontent isa Expr && throw(Meta.ParseError)
-							content = tmpcontent
+                            content = tmpcontent
                         catch
                             content = Symbol(content)
                         end
@@ -184,9 +184,9 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                         spanning = true
                     end
 
-					isempty(names(chromosome.genedata)) ?
-						(chromosome.genedata[!, Symbol(qualifier)] = Union{Missing, typeof(content)}[content]) :
-	                    pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
+                    isempty(names(chromosome.genedata)) ?
+                        (chromosome.genedata[!, Symbol(qualifier)] = Union{Missing, typeof(content)}[content]) :
+                        pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
 
                 else
                     # Qualifiers without a value assigned to them end up here
@@ -231,5 +231,5 @@ end
 Parse GenBank-formatted file, returning a `Vector{GenBank.Record}`. `input` can be a file path or an `IOStream`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Setting `gunzip` to `true` forces this behaviour.
 """
 function readgbk(input)
-	collect(open(Reader, input))
+    collect(open(Reader, input))
 end
