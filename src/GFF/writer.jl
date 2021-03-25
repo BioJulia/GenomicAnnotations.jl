@@ -17,10 +17,6 @@ function Writer(output::IO)
 	end
 end
 
-function Base.broadcastable(writer::Writer)
-	Ref(writer)
-end
-
 function Base.write(writer::Writer, record::Record)
 	printgff(writer.output, record)
 end

@@ -100,7 +100,7 @@ Parse and return one chromosome entry, and the line number that it ends at.
 function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 	eof(stream) && return nothing
     iobuffer = IOBuffer()
-	isheader = true
+    isheader = true
     isfooter = false
     spanning = false
     position_spanning = false
@@ -111,8 +111,6 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     feature = :source
     locus = Locus()
 
-    # chromosome = Record{G}()
-	chromosome = record
 
     linecount = 0
 	while !eof(stream)
