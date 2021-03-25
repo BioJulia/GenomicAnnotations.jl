@@ -1,20 +1,26 @@
-__precompile__(true)
 module GenomicAnnotations
 
+using TranscodingStreams
+using BioGenerics
 using DataFrames
 using BioSequences
 using GZip
 
-export Chromosome, Gene, AbstractGene, GeneDataView, Locus
-export readgbk, sequence, iscomplement, iscomplete, addgene!, pushproperty!, printgbk
+export GenBank, GFF
+export Gene, AbstractGene, GeneDataView, Locus
+export sequence, iscomplement, iscomplete, addgene!, pushproperty!
 export feature, index, locus
 export @genes, upstream, downstream, neighbours
-export readgff, printgff
 
-include("types.jl")
+include("record.jl")
 include("genedataview.jl")
-include("readgbk.jl")
-include("readgff.jl")
 include("macro.jl")
+include("utils.jl")
+
+
+include("GenBank/GenBank.jl")
+import .GenBank
+include("GFF/GFF.jl")
+import .GFF
 
 end #module
