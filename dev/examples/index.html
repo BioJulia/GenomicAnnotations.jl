@@ -20,6 +20,15 @@ end
 
 addphobius!(chrs, &quot;phobius.txt&quot;)
 
-printgbk(&quot;updated_genome.gbk&quot;, chrs)</code></pre><h2 id="Converting-between-formats-1"><a class="docs-heading-anchor" href="#Converting-between-formats-1">Converting between formats</a><a class="docs-heading-anchor-permalink" href="#Converting-between-formats-1" title="Permalink"></a></h2><p>Note that GenBank and GFF3 headers do not contain the same information, thus all information in the header is lost when saving annotations as another format.</p><pre><code class="language-julia">using GenomicAnnotations
+open(GenBank.Writer, &quot;updated_genome.gbk&quot;) do w
+    for chr in chrs
+        write(w, chr)
+    end
+end</code></pre><h2 id="Converting-between-formats-1"><a class="docs-heading-anchor" href="#Converting-between-formats-1">Converting between formats</a><a class="docs-heading-anchor-permalink" href="#Converting-between-formats-1" title="Permalink"></a></h2><p>Note that GenBank and GFF3 headers do not contain the same information, thus all information in the header is lost when saving annotations as another format.</p><pre><code class="language-julia">using GenomicAnnotations
 chrs = readgbk(&quot;genome.gbk&quot;)
-printgff(&quot;genome.gff&quot;, chrs)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../genes/">« Filtering: the @genes macro</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 24 November 2020 10:14">Tuesday 24 November 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+printgff(&quot;genome.gff&quot;, chrs)
+open(GFF.Writer, &quot;genome.gff&quot;) do w
+    for chr in chrs
+        write(w, chr)
+    end
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../genes/">« Filtering: the @genes macro</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 25 March 2021 16:35">Thursday 25 March 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
