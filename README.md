@@ -12,12 +12,12 @@ pkg> add GenomicAnnotations
 
 
 ## Usage
-GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Chromosome`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Record`s. `input` can be an `IOStream` or a file path. GZipped data  is unzipped automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
 
-`Chromosome`s have five fields, `name`, `header`, `genes`, `genedata`, and `sequence`. The `name` is read from the `header`, which is stored as a string. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
+`Record`s have five fields, `name`, `header`, `genes`, `genedata`, and `sequence`. The `name` is read from the `header`, which is stored as a string. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
 ```julia
 for gene in chr.genes
     gene.locus_tag = "$(chr.name)_$(gene.locus_tag)"
@@ -39,7 +39,7 @@ if get(chr.genes[2], :pseudo, false)
 end
 ```
 
-The macro `@genes` can be used to filter through the annotations. The macro takes a `Chromosome` or a `Vector{Chromosome}`, followed by any number of expressions that will be evaluated for each gene. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations. Gene attributes can be referred to using `Symbol`s.
+The macro `@genes` can be used to filter through the annotations. The macro takes a `Record` or a `Vector{Record}`, followed by any number of expressions that will be evaluated for each gene. The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations. Gene attributes can be referred to using `Symbol`s.
 ```julia
 @genes(chr, feature(gene) == "CDS")  # Returns all coding regions
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
@@ -68,8 +68,8 @@ using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
     for gene in @genes(chr, CDS)
-        aaseq = sequence(gene; translate = true)
-        write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
+        aaseq = GenomicAnnotations.sequence(gene; translate = true)
+        write(w, FASTA.Record(gene.locus_tag, get(:product, ""), aaseq))
     end
 end
 ```
@@ -91,7 +91,7 @@ Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the 
 println(chr.genes[1])
 println(@genes(chr, CDS))
 
-open("updated.gbk", "w") do f
-    printgbk(f, chr)
+open(GenBank.Writer, "updated.gbk") do w
+    write(w, chr)
 end
 ```
