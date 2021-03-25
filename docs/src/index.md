@@ -12,12 +12,20 @@ pkg> add GenomicAnnotations
 
 
 ## Examples
-GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Chromosome`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Record`s. `input` can be an `IOStream` or a file path. GZipped data can be read by setting the keyword `gunzip` to true, which is done automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first record.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
+Another way to read files is to use the corresponding `Reader` directly:
+```julia
+open(GenBank.Reader, "test/example.gbk") do reader
+    for record in reader
+        println(record.name)
+    end
+end
+```
 
-`Chromosome`s have five fields, `name`, `header`, `genes`, `genedata`, and `sequence`. The `name` is read from the `header`, which is stored as a string. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
+`Record`s have five fields, `name`, `header`, `genes`, `genedata`, and `sequence`. The `name` is read from the `header`, which is stored as a string. The annotation data is stored in `genedata`, but generally you should use `genes` to access that data. For example, it can be used to iterate over annotations, and to modify them.
 ```julia
 for gene in chr.genes
     gene.locus_tag = "$(chr.name)_$(gene.locus_tag)"
@@ -37,8 +45,8 @@ using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
     for gene in @genes(chr, CDS)
-        aaseq = sequence(gene; translate = true)
-        write(w, FASTA.record(gene.locus_tag, get(:product, ""), aaseq))
+        aaseq = GenomicAnnotations.sequence(gene; translate = true)
+        write(w, FASTA.Record(gene.locus_tag, get(:product, ""), aaseq))
     end
 end
 ```
@@ -55,12 +63,12 @@ delete!(@genes(chr, :pseudo))
 delete!(@genes(chr, length(gene) <= 60))
 ```
 
-Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `printgbk(io, chr)` can be used to write them to a file. `printgff(io, chr)` prints the annotations as GFF3, in which case the GenBank header is lost.
+Individual genes, and `Vector{Gene}`s are printed in GBK format. To include the GBK header and the nucleotide sequence, `write(::GenBank.Writer, chr)` can be used to write them to a file. Use `GFF.Writer` instead to print the annotations as GFF3, in which case the GenBank header is lost.
 ```julia
 println(chr.genes[1])
 println(@genes(chr, CDS))
 
-open("updated.gbk", "w") do f
-    printgbk(f, chr)
+open(GenBank.Writer, "updated.gbk") do w
+    write(w, chr)
 end
 ```
