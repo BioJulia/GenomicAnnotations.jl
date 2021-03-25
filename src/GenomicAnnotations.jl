@@ -4,7 +4,6 @@ using TranscodingStreams
 using BioGenerics
 using DataFrames
 using BioSequences
-using GZip
 
 export GenBank, GFF
 export Gene, AbstractGene, GeneDataView, Locus
