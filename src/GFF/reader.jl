@@ -74,7 +74,6 @@ function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
         if line == "##FASTA"
             isfooter = true
         elseif !isfooter && !isheader
-            # println("", line)
             (seqid, source, feature, sstart, send, score, strand, phase, attributes) = split(line, '    ')
             if isempty(chr.name)
                 chr.header = String(take!(header))
