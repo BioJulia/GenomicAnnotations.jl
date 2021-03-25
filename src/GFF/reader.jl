@@ -44,18 +44,16 @@ function BioGenerics.IO.tryread!(reader::Reader, output)
     parsechromosome!(reader.io, output)
 end
 
-function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
-    chr = output
-    chr.genedata[!, :source] = Union{Missing, String}[]
-    chr.genedata[!, :score] = Union{Missing, Float64}[]
-    chr.genedata[!, :phase] = Union{Missing, Int}[]
+function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
+    record.genedata[!, :source] = Union{Missing, String}[]
+    record.genedata[!, :score] = Union{Missing, Float64}[]
+    record.genedata[!, :phase] = Union{Missing, Int}[]
     iobuffer = IOBuffer()
     isheader = true
     isfooter = false
     qualifier = String("")
     content = String("")
     header = IOBuffer()
-    currentchr = 0
     currentfasta = ""
     linecount = 0
     while !eof(input)
@@ -74,25 +72,25 @@ function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
         if line == "##FASTA"
             isfooter = true
         elseif !isfooter && !isheader
-            (seqid, source, feature, sstart, send, score, strand, phase, attributes) = split(line, '    ')
-            if isempty(chr.name)
-                chr.header = String(take!(header))
-                chr.name = seqid
-            elseif seqid != chr.name
+            (seqid, source, feature, sstart, send, score, strand, phase, attributes) = split(line, '\t')
+            if isempty(record.name)
+                record.header = String(take!(header))
+                record.name = seqid
+            elseif seqid != record.name
                 ### The following contig lacks a header
                 TranscodingStreams.unread(input, UInt8.(c for c in line))
-                return chr
+                return record
             end
             locus = Locus(parse(Int, sstart):parse(Int, send), strand[1])
-            addgene!(chr, Symbol(feature), locus)
-            if source != "." && ismissing(chr.genes[end].source)
-                chr.genes[end].source = source
+            addgene!(record, Symbol(feature), locus)
+            if source != "." && ismissing(record.genes[end].source)
+                record.genes[end].source = source
             end
-            if score != "." && ismissing(chr.genes[end].score)
-                chr.genes[end].score = parse(Float64, score)
+            if score != "." && ismissing(record.genes[end].score)
+                record.genes[end].score = parse(Float64, score)
             end
             if phase != "."
-                chr.genes[end].phase = parse(Int, phase)
+                record.genes[end].phase = parse(Int, phase)
             end
             if attributes != "."
                 for attribute in split(attributes, ';')
@@ -105,7 +103,7 @@ function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
                         else
                             value = String(value)
                         end
-                        pushproperty!(chr.genes[end], Symbol(qualifier), value)
+                        pushproperty!(record.genes[end], Symbol(qualifier), value)
                     end
                 end
             end
@@ -113,7 +111,7 @@ function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
             if line[1] == '>'
                 currentfasta = line[2:end]
                 seq = String(take!(iobuffer))
-                chr.sequence = LongDNASeq(seq)
+                record.sequence = LongDNASeq(seq)
             else
                 if line[1] ∉ ['A', 'T', 'G', 'C']
                     println(line)
@@ -123,13 +121,13 @@ function parsechromosome!(input, output::Record{G}) where G <: AbstractGene
         end
     end
     if !isempty(currentfasta)
-        chr.sequence = LongDNASeq(String(take!(iobuffer)))
+        record.sequence = LongDNASeq(String(take!(iobuffer)))
     end
-    chr.header = headerstring = String(take!(header))
-    if isempty(chr.name)
+    record.header = headerstring = String(take!(header))
+    if isempty(record.name)
         return nothing
     else
-        return chr
+        return record
     end
 end
 

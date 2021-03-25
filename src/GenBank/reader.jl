@@ -128,7 +128,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 
         ### HEADER
         if isheader && occursin(r"FEATURES", line)
-            chromosome.header = String(take!(iobuffer))
+            record.header = String(take!(iobuffer))
             isheader = false
 
         elseif isheader
@@ -163,7 +163,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                     println(line)
                     @error "parseposition(line) failed at line $linecount"
                 end
-                addgene!(chromosome, feature, locus)
+                addgene!(record, feature, locus)
             elseif !spanning && occursin(r"^ +/", line)
                 if occursin(r"=", line)
                     if occursin("=\"", line)
@@ -184,14 +184,14 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                         spanning = true
                     end
 
-                    isempty(names(chromosome.genedata)) ?
-                        (chromosome.genedata[!, Symbol(qualifier)] = Union{Missing, typeof(content)}[content]) :
-                        pushproperty!(chromosome.genes[end], Symbol(qualifier), content)
+                    isempty(names(record.genedata)) ?
+                        (record.genedata[!, Symbol(qualifier)] = Union{Missing, typeof(content)}[content]) :
+                        pushproperty!(record.genes[end], Symbol(qualifier), content)
 
                 else
                     # Qualifiers without a value assigned to them end up here
                     qualifier = split(line, '/')[2]
-                    pushproperty!(chromosome.genes[end], Symbol(qualifier), true)
+                    pushproperty!(record.genes[end], Symbol(qualifier), true)
                 end
             elseif spanning
                 try
@@ -202,10 +202,10 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                 if line[end] == '"'
                     spanning = false
                 end
-                if eltype(chromosome.genedata[!, Symbol(qualifier)]).b <: AbstractArray
-                    chromosome.genedata[!, Symbol(qualifier)][end][end] = oneline(Base.getproperty(chromosome.genes[end], Symbol(qualifier))[end] * "\n" * content)
+                if eltype(record.genedata[!, Symbol(qualifier)]).b <: AbstractArray
+                    record.genedata[!, Symbol(qualifier)][end][end] = oneline(Base.getproperty(record.genes[end], Symbol(qualifier))[end] * "\n" * content)
                 else
-                    Base.setproperty!(chromosome.genes[end], Symbol(qualifier), oneline(Base.getproperty(chromosome.genes[end], Symbol(qualifier)) * "\n" * content))
+                    Base.setproperty!(record.genes[end], Symbol(qualifier), oneline(Base.getproperty(record.genes[end], Symbol(qualifier)) * "\n" * content))
                 end
             end
 
@@ -219,9 +219,9 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             end
         end
     end
-    chromosome.name = parseheader(chromosome.header)
-    chromosome.sequence = LongDNASeq(filterseq(iobuffer))
-    return chromosome
+    record.name = parseheader(record.header)
+    record.sequence = LongDNASeq(filterseq(iobuffer))
+    return record
 end
 
 
