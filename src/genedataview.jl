@@ -1,5 +1,5 @@
 struct GeneDataView{G <: AbstractGene} <: AbstractArray{G, 1}
-    parent::Vector{Chromosome{G}}
+    parent::Vector{Record{G}}
     indices::Vector{UInt}
     property::Symbol
 end

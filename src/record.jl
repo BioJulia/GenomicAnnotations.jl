@@ -1,11 +1,11 @@
 """
-Abstract type used to represent genes on a `Chromosome`. Subtypes must implement:
+Abstract type used to represent genes on a `Record`. Subtypes must implement:
  * parent(gene)
  * index(gene)
  * locus(gene)
  * addgene!(chr, feature, locus)
 
-This mainly exists to allow `Chromosome`s and `Gene`s to refer to eachother,
+This mainly exists to allow `Record`s and `Gene`s to refer to eachother,
 and may be removed in the future.
 """
 abstract type AbstractGene end
@@ -54,36 +54,36 @@ Contains five fields: `name`, `sequence`, `header`, `genes`, and `genedata`.
 Annotations are stored as a `DataFrame` in `genedata`, but can be accessed
 more easily through `genes` using the API provided in this module.
 """
-mutable struct Chromosome{G <: AbstractGene}
+mutable struct Record{G <: AbstractGene}
     name::String
     sequence::LongDNASeq
     header::String
     genes::Vector{G}
     genedata::DataFrame
     circular::Bool
-    Chromosome{G}(name, sequence, header, genes::Vector{G}, genedata, circular) where G = new(name, sequence, header, genes, genedata, circular)
+    Record{G}(name, sequence, header, genes::Vector{G}, genedata, circular) where G = new(name, sequence, header, genes, genedata, circular)
 end
 
 
-Chromosome(args...) = Chromosome{Gene}(args...)
+Record(args...) = Record{Gene}(args...)
 
 
 struct Gene <: AbstractGene
-    parent::Chromosome{Gene}
+    parent::Record{Gene}
     index::UInt
     locus::Locus
     feature::Symbol
 end
 
 
-Chromosome{Gene}() = Chromosome{Gene}("", dna"", "", Gene[], DataFrame(), false)
+Record{Gene}() = Record{Gene}("", dna"", "", Gene[], DataFrame(), false)
 
 
-iscircular(c::Chromosome{T}) where {T<:AbstractGene} = c.circular
+iscircular(c::Record{T}) where {T<:AbstractGene} = c.circular
 
 
 """
-    addgene!(chr::Chromosome, feature, locus; kw...)
+    addgene!(chr::Record, feature, locus; kw...)
 
 Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange (for
 decreasing ranges, which will be annotated on the complementary strand).
@@ -95,7 +95,7 @@ addgene!(chr, "CDS", 1:756;
     product = "Chromosomal replication initiator protein dnaA")
 ```
 """
-function addgene!(chr::Chromosome{Gene}, feature, locus; kw...)
+function addgene!(chr::Record{Gene}, feature, locus; kw...)
     locus = convert(Locus, locus)
     push!(chr.genedata, fill(missing, size(chr.genedata, 2)))
     index = UInt32(length(chr.genes) + 1)
@@ -294,44 +294,6 @@ function appendstring(field, v)
 end
 
 
-function findbreak(v, t)
-    i = t == 59 ?
-        findlast('\n', v) :
-        1
-    j = i+t-1
-    j >= lastindex(v) && return nothing
-    x = findlast(c -> c == ' ' || c == '-', v[1:j])
-    if isnothing(x)
-        return j:j+1
-    elseif x == ' '
-        return x-1:x+1
-    else
-        return x:x+1
-    end
-end
-
-
-"""
-    multiline(v, s::Symbol)
-
-Return a `String` with newlines and spaces added so that it conforms to the GenBank line width.
-"""
-function multiline(v, s)
-    v = string(v)
-    s = string(s)
-    if length(v) + length(s) > 55 && !occursin('\n', v)
-        b = findbreak(v, 55 - length(s))
-        v = v[1:b.start] * "\n" * v[b.stop:end]
-        b = findbreak(v, 59)
-        while !isnothing(b) && b.start < length(v)
-            v = v[1:b.start] * "\n" * v[b.stop:end]
-            b = findbreak(v, 59)
-        end
-    end
-    return v
-end
-
-
 function Base.show(io::IO, gene::AbstractGene)
     buf = IOBuffer()
     print(buf, "     " * rpad(string(feature(gene)), 16, ' '))
@@ -361,7 +323,7 @@ function Base.show(io::IO, genes::Array{G, 1}) where {G <: AbstractGene}
 end
 
 
-function Base.show(io::IO, chr::Chromosome)
+function Base.show(io::IO, chr::Record)
     s = "Chromosome '$(chr.name)' ($(length(chr.sequence)) bp) with $(length(chr.genes)) annotations\n"
     print(io, s)
 end
@@ -391,7 +353,7 @@ function Base.show(io::IO, locus::Locus)
 end
 
 
-Base.copy(chr::Chromosome) = deepcopy(chr)
+Base.copy(chr::Record) = deepcopy(chr)
 Base.copy(gene::AbstractGene) = deepcopy(gene)
 
 

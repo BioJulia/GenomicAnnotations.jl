@@ -3,30 +3,28 @@ using BioSequences
 using Test
 
 @testset "GenomicAnnotations" begin
-    @testset "readgbk" begin
+    @testset "GenBank parsing" begin
         s = "     gene            1..1"
-        @test GenomicAnnotations.parseposition(s) == (:gene, Locus(1:1, '+'))
+        @test GenBank.parseposition(s) == (:gene, Locus(1:1, '+'))
         s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenomicAnnotations.parseposition(s) == (:gene, Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
-
-
-        chrs = readgbk("example.gbk")
+        @test GenBank.parseposition(s) == (:gene, Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
+        chrs = collect(open(GenBank.Reader, "example.gbk"))
         @test length(chrs) == 2
         @test chrs[2].name == "plasmid1"
     end
 
-    chr = readgbk("example.gbk")[1]
+    chr = collect(open(GenBank.Reader, "example.gbk"))[1]
 
-    @testset "readgff" begin
-        open("example.gff", "w") do f
-            printgff(f, chr)
+    @testset "GFF parsing" begin
+        open(GFF.Writer, "example.gff") do w
+            write(w, chr)
         end
-        gff = readgff("example.gff")[1]
+        gff = collect(open(GFF.Reader, "example.gff"))[1]
         @test begin
             gbkbuf = IOBuffer()
             gffbuf = IOBuffer()
-            print(gbkbuf, chr.genes[1:4])
-            print(gffbuf, chr.genes[1:4])
+            print(gbkbuf, chr.genes[2:4])
+            print(gffbuf, gff.genes[2:4])
             String(take!(gbkbuf)) == String(take!(gffbuf))
         end
     end
@@ -98,8 +96,8 @@ using Test
     @test sequence(chr.genes[2]) == seq
     @test length(chr.genes[2]) == length(seq)
 
-    @testset "Chromosome" begin
-        chr = Chromosome()
+    @testset "Empty Record" begin
+        chr = GenBank.Record()
         @test chr.name == ""
         @test chr.sequence == dna""
         @test chr.header == ""
