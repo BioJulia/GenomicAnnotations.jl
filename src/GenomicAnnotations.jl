@@ -10,6 +10,7 @@ export Gene, AbstractGene, GeneDataView, Locus
 export sequence, iscomplement, iscomplete, addgene!, pushproperty!
 export feature, index, locus
 export @genes, upstream, downstream, neighbours
+export readgbk, readgff
 
 include("record.jl")
 include("genedataview.jl")

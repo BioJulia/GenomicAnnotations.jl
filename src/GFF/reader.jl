@@ -4,6 +4,11 @@ struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
     io::S
 end
 
+"""
+    GFF.Reader(input::IO)
+
+Create a data reader of the GFF3 file format.
+"""
 function Reader(input::IO)
     if input isa TranscodingStream
         Reader(input)
@@ -129,14 +134,4 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
     else
         return record
     end
-end
-
-"""
-    readgff(input, G::Type = Gene; gunzip = false)
-
-Parse GFF3-formatted file, returning a `Vector{Record}`. `input` can be a file path or an `IOStream`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Setting `gunzip` to `true` forces this behaviour.
-The type of `AbstractGene` to be used can be specified with `G`, though currently the only option is `Gene`.
-"""
-function readgff(input)
-    collect(open(input))
 end

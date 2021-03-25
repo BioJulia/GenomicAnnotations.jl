@@ -8,6 +8,16 @@ function BioGenerics.IO.stream(writer::Writer)
     return writer.output
 end
 
+"""
+    GenBank.Writer(output::IO; width=70)
+
+Create a data writer of the GenBank file format.
+```julia
+open(GenBank.Writer, outfile) do writer
+    write(writer, genome)
+end
+```
+"""
 function Writer(output::IO)
     if output isa TranscodingStream
         return Writer{typeof(output)}(stream)

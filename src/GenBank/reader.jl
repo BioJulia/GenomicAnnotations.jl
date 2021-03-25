@@ -4,6 +4,11 @@ struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
     io::S
 end
 
+"""
+    GenBank.Reader(input::IO)
+
+Create a data reader of the GenBank file format.
+"""
 function Reader(input::IO)
     if input isa TranscodingStream
         Reader(input)
@@ -222,14 +227,4 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     record.name = parseheader(record.header)
     record.sequence = LongDNASeq(filterseq(iobuffer))
     return record
-end
-
-
-"""
-    readgbk(input, G::Type = Gene; gunzip = false)
-
-Parse GenBank-formatted file, returning a `Vector{GenBank.Record}`. `input` can be a file path or an `IOStream`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Setting `gunzip` to `true` forces this behaviour.
-"""
-function readgbk(input)
-    collect(open(Reader, input))
 end

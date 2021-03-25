@@ -54,3 +54,23 @@ function multiline(v, s)
     end
     return v
 end
+
+
+"""
+    readgbk(input)
+
+Parse GenBank-formatted file, returning a `Vector{GenBank.Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+"""
+function readgbk(input)
+    collect(open(GenBank.Reader, input))
+end
+
+
+"""
+    readgff(input)
+
+Parse GFF3-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+"""
+function readgff(input)
+    collect(open(GFF.Reader, input))
+end
