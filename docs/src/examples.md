@@ -28,7 +28,11 @@ end
 
 addphobius!(chrs, "phobius.txt")
 
-printgbk("updated_genome.gbk", chrs)
+open(GenBank.Writer, "updated_genome.gbk") do w
+    for chr in chrs
+        write(w, chr)
+    end
+end
 ```
 
 
@@ -38,4 +42,9 @@ Note that GenBank and GFF3 headers do not contain the same information, thus all
 using GenomicAnnotations
 chrs = readgbk("genome.gbk")
 printgff("genome.gff", chrs)
+open(GFF.Writer, "genome.gff") do w
+    for chr in chrs
+        write(w, chr)
+    end
+end
 ```
