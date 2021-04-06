@@ -1,6 +1,5 @@
 # GenomicAnnotations.jl
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://BioJulia.github.io/GenomicAnnotations.jl/dev)
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://BioJulia.github.io/GenomicAnnotations.jl/stable)
 
 ## Description
 GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank and GFF3 file formats.
