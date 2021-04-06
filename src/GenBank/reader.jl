@@ -224,6 +224,9 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             end
         end
     end
+    if isempty(record.genes)
+        return nothing
+    end
     record.name = parseheader(record.header)
     record.sequence = LongDNASeq(filterseq(iobuffer))
     return record
