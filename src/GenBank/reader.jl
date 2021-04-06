@@ -224,7 +224,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             end
         end
     end
-    if isempty(record.genes)
+    if isempty(record.header) && isempty(record.genes) && isempty(record.sequence)
         return nothing
     end
     record.name = parseheader(record.header)
