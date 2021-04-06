@@ -12,5 +12,5 @@ makedocs(sitename = "GenomicAnnotations.jl", authors = "Karl Dyrhage",
 )
 
 deploydocs(
-    repo = "github.com/kdyrhage/GenomicAnnotations.jl.git",
+    repo = "github.com/BioJulia/GenomicAnnotations.jl.git",
 )
