@@ -41,7 +41,6 @@ Note that GenBank and GFF3 headers do not contain the same information, thus all
 ```julia
 using GenomicAnnotations
 chrs = readgbk("genome.gbk")
-printgff("genome.gff", chrs)
 open(GFF.Writer, "genome.gff") do w
     for chr in chrs
         write(w, chr)
