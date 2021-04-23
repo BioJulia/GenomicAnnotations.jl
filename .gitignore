@@ -1,2 +1,4 @@
 docs/build
 test/example.gff
+test/test.jl
+Manifest.toml
