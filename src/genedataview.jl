@@ -1,8 +1,9 @@
-struct GeneDataView{G <: AbstractGene} <: AbstractArray{G, 1}
-    parent::Vector{Record{G}}
+struct GeneDataView{R, G <: AbstractGene} <: AbstractArray{G, 1}
+    parent::Vector{R}
     indices::Vector{UInt}
     property::Symbol
 end
+GeneDataView(parent::Vector{R}, i, p) where R = GeneDataView{R, Gene}(parent, i, p)
 
 
 function Base.getproperty(gene::G, name::Symbol) where {G <: AbstractGene}
@@ -14,7 +15,7 @@ function Base.getproperty(gene::G, name::Symbol) where {G <: AbstractGene}
 end
 
 
-function Base.getproperty(gv::GeneDataView{G}, name::Symbol) where {G <: AbstractGene}
+function Base.getproperty(gv::GeneDataView, name::Symbol)
     return getfield(gv, name)
 end
 
@@ -45,7 +46,7 @@ Base.copy(gv::GeneDataView{G}) where {G <: AbstractGene} = GeneDataView(gv.paren
 Base.view(gv::GeneDataView{G}, I) where {G <: AbstractGene} = GeneDataView(gv.parent[I], gv.indices[I], gv.property)
 
 
-function Base.fill!(gv::GeneDataView{G}, x) where {G <: AbstractGene}
+function Base.fill!(gv::GeneDataView, x)
     chrs = unique(gv.parent)
     for chr in chrs
         if hasproperty(chr.genedata, gv.property)

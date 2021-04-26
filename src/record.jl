@@ -54,29 +54,32 @@ Contains five fields: `name`, `sequence`, `header`, `genes`, and `genedata`.
 Annotations are stored as a `DataFrame` in `genedata`, but can be accessed
 more easily through `genes` using the API provided in this module.
 """
-mutable struct Record{G <: AbstractGene}
+mutable struct Record{G <: AbstractGene, H}
     name::String
     sequence::LongDNASeq
-    header::String
+    header::H
     genes::Vector{G}
     genedata::DataFrame
     circular::Bool
-    Record{G}(name, sequence, header, genes::Vector{G}, genedata, circular) where G = new(name, sequence, header, genes, genedata, circular)
+    Record{G, H}(name, sequence, header, genes::Vector{G}, genedata, circular) where {G, H} = new(name, sequence, header, genes, genedata, circular)
 end
 
 
-Record(args...) = Record{Gene}(args...)
+Record(args...) = Record{Gene, String}(args...)
+Record{G}(args...) where {G <: AbstractGene} = Record{G, String}(args...)
 
 
 struct Gene <: AbstractGene
-    parent::Record{Gene}
+    parent::Record
     index::UInt
     locus::Locus
     feature::Symbol
 end
 
 
-Record{Gene}() = Record{Gene}("", dna"", "", Gene[], DataFrame(), false)
+Record{Gene}() = Record{Gene, String}("", dna"", "", Gene[], DataFrame(), false)
+Record{Gene, H}() where H = Record{Gene, H}("", dna"", H(), Gene[], DataFrame(), false)
+Record{Gene, H}() where {H<:AbstractString} = Record{Gene, H}("", dna"", "", Gene[], DataFrame(), false)
 
 
 iscircular(c::Record{T}) where {T<:AbstractGene} = c.circular

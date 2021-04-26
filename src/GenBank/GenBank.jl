@@ -12,5 +12,7 @@ export sequence, iscomplement, iscomplete, feature, index, locus
 
 include("reader.jl")
 include("writer.jl")
+include("header.jl")
+export iscircular!
 
 end #module

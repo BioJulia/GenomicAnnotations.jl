@@ -1,7 +1,8 @@
 # GenBank Reader
 
-struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
+struct Reader{H, S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
     io::S
+    headertype::Type{H}
 end
 
 """
@@ -9,12 +10,14 @@ end
 
 Create a data reader of the GenBank file format.
 """
-function Reader(input::IO)
+Reader(input::IO) = Reader(input, String)
+# Reader{H}(input::IO) where H = Reader(input, H)
+function Reader{T}(input::IO) where T
     if input isa TranscodingStream
-        Reader(input)
+        Reader(input, T)
     else
         stream = TranscodingStreams.NoopStream(input)
-        Reader(stream)
+        Reader(stream, T)
     end
 end
 
@@ -26,11 +29,11 @@ function Base.close(reader::Reader)
     close(reader.io)
 end
 
-function Base.open(::Type{<:Reader}, input::AbstractString)
+function Base.open(T::Type{<:Reader}, input::AbstractString)
     if input[end-2:end] == ".gz"
-        return Reader(GzipDecompressorStream(open(input)))
+        return T(GzipDecompressorStream(open(input)))
     else
-        return Reader(TranscodingStreams.NoopStream(open(input)))
+        return T(TranscodingStreams.NoopStream(open(input)))
     end
 end
 
@@ -38,7 +41,16 @@ function BioGenerics.IO.stream(reader::Reader)
     reader.io
 end
 
-function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader{S,H}) where {S,H}
+    iterate(reader, Record{Gene, H}())
+end
+function Base.iterate(reader::Reader)
+    println(1)
+    iterate(reader, Record{Gene, reader.headertype}())
+end
+# function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader, nextone::Record)
+    println(2)
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
@@ -51,9 +63,9 @@ function BioGenerics.IO.tryread!(reader::Reader, output)
 end
 
 """
-Return the LOCUS entry of the header.
+Return the name from the header.
 """
-function parseheader(header::String)
+function parsename(header::String)
     lines = split(header, "\n")
     firstline = lines[findfirst(line -> occursin("LOCUS", line), lines)]
     locus = split(firstline, r" +")[2]
@@ -102,7 +114,7 @@ end
 
 Parse and return one chromosome entry, and the line number that it ends at.
 """
-function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
+function parsechromosome!(stream::IO, record::Record{G, H}) where {G <: AbstractGene, H}
     eof(stream) && return nothing
     iobuffer = IOBuffer()
     isheader = true
@@ -111,7 +123,6 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     position_spanning = false
     qualifier = String("")
     content = String("")
-    header = ""
 
     feature = :source
     locus = Locus()
@@ -133,7 +144,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 
         ### HEADER
         if isheader && occursin(r"FEATURES", line)
-            record.header = String(take!(iobuffer))
+            record.header = parseheader(H, String(take!(iobuffer)))
             isheader = false
 
         elseif isheader
@@ -227,7 +238,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     if isempty(record.header) && isempty(record.genes) && isempty(record.sequence)
         return nothing
     end
-    record.name = parseheader(record.header)
+    record.name = parsename(record.header)
     record.sequence = LongDNASeq(filterseq(iobuffer))
     return record
 end
