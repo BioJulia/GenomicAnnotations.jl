@@ -31,6 +31,7 @@ using Test
 
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))
+        @test length(chr.sequence) == length(sequence(chr))
     end
 
     @testset "Gene properties" begin

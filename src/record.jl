@@ -251,7 +251,7 @@ end
 Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, excluding the stop, otherwise it will be returned as a `LongDNASeq` (including the stop codon).
 ```
 """
-function sequence(gene::AbstractGene; translate = false)
+function BioSequences.sequence(gene::AbstractGene; translate = false)
     if locus(gene).strand == '-'
         s = reverse_complement(parent(gene).sequence[locus(gene).position])
     else
@@ -263,6 +263,11 @@ end
 
 Base.length(gene::AbstractGene) = length(locus(gene))
 Base.length(locus::Locus) = length(locus.position)
+
+
+function BioSequences.sequence(record::Record)
+    record.sequence
+end
 
 
 """
