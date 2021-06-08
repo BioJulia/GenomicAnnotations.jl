@@ -1,60 +1,66 @@
-function genes_helper!(ex)
-    if ex isa Expr && !isempty(ex.args)
-        if ex.args[1] ∉ [:Ref, :upstream, :downstream, :neighbours]
+function genes_helper!(ex, gene)
+    if ex isa Expr && !isempty(ex.args) && ex.head != :($)
+        if ex.args[1] ∉ [:upstream, :downstream, :neighbours]
             skipgene = ex.args[1] ∉ [:(||), :(&&)]
             skipfirst = ex.head == :call
-            genes_special_cases!(ex.args; skipgene = skipgene, skipfirst = skipfirst)
+            genes_special_cases!(ex.args, gene; skipgene = skipgene, skipfirst = skipfirst)
         end
         if ex.head == :call
-            if ex.args[1] == :Ref
-                # Remove Ref(), but ignore the content
-                ex2 = copy(ex)
-                ex.head = :ref
-                empty!(ex.args)
-                push!(ex.args, ex2)
-            elseif ex.args[1] == :get
+            if ex.args[1] == :get
                 if length(ex.args) == 3
                     # Expand `get(s::Symbol, default)` to `get(gene, s::Symbol, default)`
-                    genes_helper!(ex.args[3])
-                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
+                    genes_helper!(ex.args[3], gene)
+                    ex.args = vcat(ex.args[1], gene, ex.args[2:3])
                 else
-                    genes_helper!(ex.args[2])
-                    genes_helper!(ex.args[4])
+                    if ex.args[2] == :gene
+                        ex.args[2] = gene
+                    end
+                    genes_helper!(ex.args[2], gene)
+                    genes_helper!(ex.args[4], gene)
                 end
             elseif ex.args[1] in [:upstream, :downstream, :neighbours]
                 # Expand `upstream(i, f)` to `upstream(gene, f, i)`, etc.
                 if length(ex.args) == 3
                     feature_function!(ex.args)
-                    ex.args = vcat(ex.args[1], :gene, ex.args[2:3])
+                    ex.args = vcat(ex.args[1], gene, ex.args[2:3])
                 end
             else
                 for i in eachindex(ex.args)[2:end]
                     if ex.args[i] isa QuoteNode
-                        ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
+                        ex.args[i] = :(Base.getproperty($gene, $(ex.args[i])))
+                    elseif ex.args[i] == :gene
+                        ex.args[i] = gene
                     else
-                        genes_helper!(ex.args[i])
+                        genes_helper!(ex.args[i], gene)
                     end
                 end
             end
         elseif ex.head == :(.) && ex.args[1] == :get
             if length(ex.args[2].args) == 2
-                genes_helper!(ex.args[2].args[2])
-                ex.args[2].args = vcat(Expr(:call, :Ref, :gene), ex.args[2].args)
+                genes_helper!(ex.args[2].args[2], gene)
+                ex.args[2].args = vcat(:($gene), ex.args[2].args)
             else
-                genes_helper!(ex.args[2].args[1])
-                genes_helper!(ex.args[2].args[3])
+                genes_helper!(ex.args[2].args[1], gene)
+                genes_helper!(ex.args[2].args[3], gene)
             end
         else
             for i in eachindex(ex.args)
                 if ex.args[i] isa QuoteNode
                     if ex.head != :(.)
-                        ex.args[i] = :(Base.getproperty(gene, $(ex.args[i])))
+                        ex.args[i] = :(Base.getproperty($gene, $(ex.args[i])))
                     end
                 else
-                    genes_helper!(ex.args[i])
+                    genes_helper!(ex.args[i], gene)
                 end
             end
         end
+    elseif ex isa Expr && ex.head === :($)
+        # Allow circumventing special syntax with "$"
+        ex2 = copy(ex)
+        ex.head = :call
+        empty!(ex.args)
+        push!(ex.args, :identity)
+        append!(ex.args, ex2.args)
     end
 end
 
@@ -68,8 +74,6 @@ in the expression will be substituted for `gene.s`. The gene itself can be
 accessed in the expression as `gene`. Accessing properties of the returned list
 of genes returns a view, which can be altered.
 
-Symbols and expressions escaped with `Ref()` will be ignored.
-
 Some short-hand forms are available to make life easier:
     `CDS`, `rRNA`, and `tRNA` expand to `feature(gene) == "..."`,
     `get(s::Symbol, default)` expands to `get(gene, s, default)`
@@ -79,7 +83,7 @@ Some short-hand forms are available to make life easier:
 julia> chromosome = readgbk("example.gbk")
 Chromosome 'example' (5028 bp) with 6 annotations
 
-julia> @genes(chromosome, iscds) |> length
+julia> @genes(chromosome, CDS) |> length
 3
 
 julia> @genes(chromosome, length(gene) < 500)
@@ -101,8 +105,8 @@ julia> @genes(chromosome, ismissing(:gene)) |> length
 
 All arguments have to evaluate to `true` for a gene to be included, so the following expressions are equivalent:
 ```julia
-@genes(chr, feature(gene) == Ref(:CDS), length(gene) > 300)
-@genes(chr, (feature(gene) == Ref(:CDS)) && (length(gene) > 300))
+@genes(chr, CDS, length(gene) > 300)
+@genes(chr, CDS && (length(gene) > 300))
 ```
 
 `@genes` returns a `Vector{Gene}`. Attributes can be accessed with dot-syntax, and can be assigned to
@@ -110,27 +114,44 @@ All arguments have to evaluate to `true` for a gene to be included, so the follo
 @genes(chr, :locus_tag == "tag03")[1].pseudo = true
 @genes(chr, CDS, ismissing(:gene)).gene .= "unknown"
 ```
+
+Symbols and expressions escaped with `\$` will be ignored.
+```julia
+d = Dict(:category1 => ["tag01", "tag02"], :category2 => ["tag03"])
+@genes(chr, :locus_tag in d[\$:category1])
+
+gene = chr.genes[5]
+@genes(chr, gene == \$gene)
+```
 """
 macro genes(chr, exs...)
+    hits = gensym()
+    i = gensym()
+    gene = gensym()
     exs = Any[ex for ex in exs]
-    genes_special_cases!(exs; skipgene = false, skipfirst = false)
+    genes_special_cases!(exs, gene; skipgene = false, skipfirst = false)
     for (i, ex) in enumerate(exs)
         # Expressions
         if ex isa Expr
             exs[i] = :((x -> ismissing(x) ? false : x)($(exs[i])))
-            genes_helper!(exs[i])
+            genes_helper!(exs[i], gene)
         elseif ex isa QuoteNode
-            exs[i] = :((x -> ismissing(x) ? false : x)(Base.getproperty(gene, $ex)))
+            exs[i] = :((x -> ismissing(x) ? false : x)(Base.getproperty($gene, $ex)))
         end
     end
     ex = Expr(:&&, exs...)
-    hits = gensym()
-    i = gensym()
     return esc(quote
-        if $chr isa AbstractVector
+        if $chr isa AbstractVector{Gene}
+            $hits = falses(size($chr, 1))
+            for ($i, $gene) in enumerate($chr)
+                local h = $ex
+                $hits[$i] = ismissing(h) ? false : h
+            end
+            $chr[$hits]
+        elseif $chr isa AbstractVector
             vcat([begin
                     $hits = falses(size(c.genes, 1))
-                    for ($i, gene) in enumerate(c.genes)
+                    for ($i, $gene) in enumerate(c.genes)
                         local h = $ex
                         $hits[$i] = ismissing(h) ? false : h
                     end
@@ -138,7 +159,7 @@ macro genes(chr, exs...)
                 end for c in $chr]...)
         else
             $hits = falses(size($chr.genes, 1))
-            for ($i, gene) in enumerate($chr.genes)
+            for ($i, $gene) in enumerate($chr.genes)
                 local h = $ex
                 $hits[$i] = ismissing(h) ? false : h
             end
@@ -224,22 +245,22 @@ function feature_function!(exs; skipgene = false, skipfirst = true)
 end
 
 
-function genes_special_cases!(exs; skipgene = false, skipfirst = true)
+function genes_special_cases!(exs, gene; skipgene = false, skipfirst = true)
     features = [:CDS, :rRNA, :tRNA, :mRNA, :exon, :intron, :regulatory, :source, :repeat_region]
     for (i, ex) in enumerate(exs)
         skipfirst && i == 1 && continue
         if ex isa Symbol
             if ex == :gene && !skipgene
-                exs[i] = :(GenomicAnnotations.feature(gene) == Ref(:gene))
+                exs[i] = :(GenomicAnnotations.feature($gene) == $(Expr(:($), QuoteNode(:gene))))
             elseif ex in features
-                exs[i] = :(GenomicAnnotations.feature(gene) == Ref($(QuoteNode(ex))))
+                exs[i] = :(GenomicAnnotations.feature($gene) == $(Expr(:($), QuoteNode(ex))))
             end
         elseif ex isa Expr && ex.head == :call && ex.args[1] == :(!)
             feature = ex.args[2]
             if feature == :gene
-                exs[i] = :(GenomicAnnotations.feature(gene) != Ref(:gene))
+                exs[i] = :(GenomicAnnotations.feature($gene) != $(Expr(:($), QuoteNode(:gene))))
             elseif feature in features
-                exs[i] = :(GenomicAnnotations.feature(gene) != Ref($(QuoteNode(feature))))
+                exs[i] = :(GenomicAnnotations.feature($gene) != $(Expr(:($), QuoteNode(feature))))
             end
         end
     end

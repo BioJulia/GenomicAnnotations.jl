@@ -64,12 +64,21 @@ using Test
     end
 
     @testset "@genes" begin
-        @test @genes(chr, feature(gene) == Ref(:CDS)) == chr.genes[[2,4,6]]
-        @test @genes(chr, feature(gene) == Ref(:CDS)) == @genes(chr, CDS)
+        @test length(union(@genes(chr, CDS), @genes(chr, !CDS))) == length(chr.genes)
+        @test length(intersect(@genes(chr, CDS), @genes(chr, !CDS))) == 0
+        @test length(union(@genes(chr, gene), @genes(chr, !gene))) == length(chr.genes)
+        @test length(intersect(@genes(chr, gene), @genes(chr, !gene))) == 0
+        @test length(@genes(chr)) == length(chr.genes)
+        @test @genes(chr, feature(gene) == $:CDS) == chr.genes[[2,4,6]]
+        @test @genes(chr, feature(gene) == $:CDS) == @genes(chr, CDS)
         @test @genes(chr, iscomplement(gene)) == chr.genes[[5,6,7]]
-        @test @genes(chr, feature(gene) == Ref(:CDS), !iscomplement(gene)) == chr.genes[[2,4]]
+        @test @genes(chr, feature(gene) == $:CDS, !iscomplement(gene)) == chr.genes[[2,4]]
         @test @genes(chr, length(gene) < 300)[1] == chr.genes[2]
         @test length(@genes(chr, get(gene, :locus_tag, "") == "")) == 3
+        gene = chr.genes[3]
+        @test @genes(chr, gene == $gene)[1] == chr.genes[3]
+        d = Dict(:a => "tag01")
+        @test @genes(chr, :locus_tag == d[$:a]) == @genes(chr, :locus_tag == "tag01")
     end
 
     @testset "Broadcast" begin
