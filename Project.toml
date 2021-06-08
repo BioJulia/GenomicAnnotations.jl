@@ -1,7 +1,7 @@
 name = "GenomicAnnotations"
 uuid = "4f8a0a0a-376d-5ac0-ab14-e88793df67f0"
 authors = ["Karl Dyrhage <karl.dyrhage@icm.uu.se>"]
-version = "0.2.4"
+version = "0.3.0"
 
 [deps]
 BioGenerics = "47718e42-2ac5-11e9-14af-e5595289c2ea"
