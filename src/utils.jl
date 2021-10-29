@@ -74,3 +74,56 @@ Parse GFF3-formatted file, returning a `Vector{Record}`. File names ending in ".
 function readgff(input)
     collect(open(GFF.Reader, input))
 end
+
+
+function relocate_gene(gene, pos, chrlen; reverse = false)
+    oldpos = locus(gene).position
+    newposition = if reverse
+            (chrlen - mod1(oldpos.stop - pos - 1, chrlen)) : (chrlen - mod1(oldpos.start - pos - 1, chrlen))
+        elseif length(oldpos) < chrlen
+            mod1(oldpos.start - pos + 1, chrlen) : mod1(oldpos.stop - pos + 1, chrlen)
+        else
+            oldpos
+        end
+    newstrand = if !reverse
+            locus(gene).strand
+        elseif locus(gene).strand == '+'
+            '-'
+        elseif locus(gene).strand == '-'
+            '+'
+        else
+            locus(gene).strand
+        end
+    order = locus(gene).order
+    join = locus(gene).join
+    newlocus = Locus(newposition, newstrand, locus(gene).complete_right, locus(gene).complete_left, order, join)
+    Gene(parent(gene), index(gene), newlocus, feature(gene))
+end
+
+
+"""
+    reorder!(chr, pos = 1; reverse = false)
+
+Reorder `chr` so that `pos` becomes the first position. If `reverse` is `true`, the reverse genome is reversed.
+"""
+function reorder(chr, pos = 1; reverse = false)
+    newchr = deepcopy(chr)
+    reorder!(newchr, pos; reverse = reverse)
+end
+function reorder!(chr, pos = 1; reverse = false)
+    ## Reverse sequence
+    seq = reverse ?
+        BioSequences.reverse_complement(chr.sequence[pos+1:end] * chr.sequence[1:pos]) :
+        chr.sequence[pos:end] * chr.sequence[1:pos-1]
+    ## Recalculate gene loci
+    chrlen = length(chr.sequence)
+    genes = Gene[]
+    for gene in chr.genes
+        newgene = relocate_gene(gene, pos, chrlen; reverse = reverse)
+        push!(genes, newgene)
+    end
+    chr.genes = genes
+    sort!(chr.genes)
+    chr.sequence = seq
+    chr
+end

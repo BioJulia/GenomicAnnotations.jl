@@ -20,7 +20,8 @@ end
 
 
 function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
-    GeneDataView(parent.(genes), getfield.(genes, Ref(:index)), name)
+    # GeneDataView(parent.(genes), getfield.(genes, Ref(:index)), name)
+    GeneDataView(parent.(genes), index.(genes), name)
 end
 
 
