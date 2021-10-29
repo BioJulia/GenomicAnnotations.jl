@@ -37,6 +37,17 @@ function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene
 end
 
 
+function Base.getproperty(locus::Locus, name::Symbol)
+    if name == :start
+        locus.position.start
+    elseif name == :stop
+        locus.position.stop
+    else
+        getfield(locus, name)
+    end
+end
+
+
 Base.size(gv::GeneDataView) = size(gv.indices)
 Base.getindex(gv::GeneDataView, i::Int) = getproperty(gv.parent[i].genes[gv.indices[i]], gv.property)
 Base.getindex(gv::GeneDataView, I::AbstractArray) = GeneDataView(gv.parent[I], gv.indices[I], gv.property)
