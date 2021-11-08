@@ -78,7 +78,9 @@ end
 
 function relocate_gene(gene, pos, chrlen; reverse = false)
     oldpos = locus(gene).position
-    newposition = if reverse
+    newposition = if length(oldpos) == chrlen
+            oldpos
+        elseif reverse
             (chrlen - mod1(oldpos.stop - pos - 1, chrlen)) : (chrlen - mod1(oldpos.start - pos - 1, chrlen))
         elseif length(oldpos) < chrlen
             mod1(oldpos.start - pos + 1, chrlen) : mod1(oldpos.stop - pos + 1, chrlen)
