@@ -116,7 +116,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
             if line[1] == '>'
                 currentfasta = line[2:end]
                 seq = String(take!(iobuffer))
-                record.sequence = LongDNASeq(seq)
+                record.sequence = LongDNA{4}(seq)
             else
                 if line[1] ∉ ['A', 'T', 'G', 'C']
                     println(line)
@@ -126,7 +126,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
         end
     end
     if !isempty(currentfasta)
-        record.sequence = LongDNASeq(String(take!(iobuffer)))
+        record.sequence = LongDNA{4}(String(take!(iobuffer)))
     end
     record.header = headerstring = String(take!(header))
     if isempty(record.name)

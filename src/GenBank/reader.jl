@@ -228,6 +228,6 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         return nothing
     end
     record.name = parseheader(record.header)
-    record.sequence = LongDNASeq(filterseq(iobuffer))
+    record.sequence = LongDNA{4}(filterseq(iobuffer))
     return record
 end

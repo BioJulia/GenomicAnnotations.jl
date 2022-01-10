@@ -56,7 +56,7 @@ more easily through `genes` using the API provided in this module.
 """
 mutable struct Record{G <: AbstractGene}
     name::String
-    sequence::LongDNASeq
+    sequence::LongDNA{4}
     header::String
     genes::Vector{G}
     genedata::DataFrame
@@ -248,7 +248,7 @@ end
 """
     sequence(gene::AbstractGene; translate = false)
 
-Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAminoAcidSeq`, excluding the stop, otherwise it will be returned as a `LongDNASeq` (including the stop codon).
+Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAA`, excluding the stop, otherwise it will be returned as a `LongDNA{4}` (including the stop codon).
 ```
 """
 function sequence(gene::AbstractGene; translate = false)
