@@ -116,7 +116,7 @@ Delete `gene` from `parent(gene)`. Warning: does not work when broadcasted! Use
 """
 function Base.delete!(gene::AbstractGene)
     i = index(gene)
-    delete!(parent(gene).genedata, i)
+    deleteat!(parent(gene).genedata, i)
     deleteat!(parent(gene).genes, lastindex(parent(gene).genes))
     nothing
 end
