@@ -133,13 +133,20 @@ delete!(@genes(chr, length(gene) <= 60))
 ```
 """
 function Base.delete!(genes::AbstractArray{Gene, 1})
-    indices = index(gene)
+    indices = index.(genes)
     DataFrames.delete!(parent(genes).genedata, Int.(indices))
     lastindices = length(parent(genes).genes) - length(indices) + 1 : length(parent(genes).genes)
     deleteat!(parent(genes).genes, lastindices)
     nothing
 end
 
+function Base.delete!(genes::Vector{Gene})
+    indices = index.(genes)
+    DataFrames.delete!(parent(genes).genedata, Int.(indices))
+    lastindices = length(parent(genes).genes) - length(indices) + 1 : length(parent(genes).genes)
+    deleteat!(parent(genes).genes, lastindices)
+    nothing
+end
 
 function Base.propertynames(gene::G) where {G <: AbstractGene}
     propertynames(parent(gene).genedata)
