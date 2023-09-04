@@ -246,18 +246,26 @@ end
 
 
 """
-    sequence(gene::AbstractGene; translate = false)
+    sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
 
-Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAA`, excluding the stop, otherwise it will be returned as a `LongDNA{4}` (including the stop codon).
+Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAA`, excluding the stop, otherwise it will be returned as a `LongDNA{4}` (including the stop codon). If `preserve_alternate_start` is set to false, alternate start codons will be assumed to code for methionine.
 ```
 """
-function sequence(gene::AbstractGene; translate = false)
+function sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
     if locus(gene).strand == '-'
         s = reverse_complement(parent(gene).sequence[locus(gene).position])
     else
         s = parent(gene).sequence[locus(gene).position]
     end
-    translate ? BioSequences.translate(s)[1:end-1] : s
+    if translate
+        if preserve_alternate_start
+            BioSequences.translate(s)[1:end-1]
+        else
+            aa"M" * BioSequences.translate(s)[2:end-1]
+        end
+    else
+        s
+    end
 end
 
 
@@ -293,9 +301,10 @@ function appendstring(field, v::Union{Number, Symbol})
     return "\n" * join(fill(' ', 21)) * "/$field=" * string(v)
 end
 function appendstring(field, v)
+    v = string("\"", v, "\"")
     v = multiline(v, field)
     v = replace(v, "\n" => "\n" * join(fill(' ', 21)))
-    return "\n" * join(fill(' ', 21)) * "/$field=\"" * v * "\""
+    return "\n" * join(fill(' ', 21)) * "/$field=" * v
 end
 
 
@@ -387,4 +396,22 @@ Base.parent(g::Gene) = getfield(g, :parent)
 function Base.parent(gs::AbstractVector{G}) where {G <: AbstractGene}
     @assert !isempty(gs) "Trying to get parent of empty Array{Gene}"
     getfield(gs[1], :parent)
+end
+
+
+"""
+    locus!(gene, loc::Locus)
+
+Replace `gene` with a new `Gene` with `loc` as its `Locus`.
+"""
+function locus!(gene::AbstractGene, pos::UnitRange{Int})
+    ol = locus(gene)
+    newloc = Locus(pos, ol.strand, ol.complete_left, ol.complete_right, ol.order, ol.join)
+    locus!(gene, newloc)
+end
+function locus!(gene::AbstractGene, loc::Locus)
+    chr = parent(gene)
+    newgene = Gene(chr, index(gene), loc, feature(gene))
+    setindex!(chr.genes, newgene, index(gene))
+    newgene
 end

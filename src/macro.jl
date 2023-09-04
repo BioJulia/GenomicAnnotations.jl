@@ -12,7 +12,7 @@ function genes_helper!(ex, gene)
                     genes_helper!(ex.args[3], gene)
                     ex.args = vcat(ex.args[1], gene, ex.args[2:3])
                 else
-                    if ex.args[2] == :gene
+                    if ex.args[2] == :gene
                         ex.args[2] = gene
                     end
                     genes_helper!(ex.args[2], gene)
@@ -191,16 +191,31 @@ downstream(f::Function, gene, cond::Function, i) = f(downstream(gene, cond, i))
 downstream(gene, cond::Function, i::Int) = downstream(gene, cond, i:i)[1]
 function downstream(gene, cond::Function, i)
     ngenes = length(parent(gene).genes)
-    j = 0
     genes = Gene[]
     grange = !iscomplement(gene) ?
-        parent(gene).genes[mod1.(index(gene) + 1 : index(gene) + ngenes - 2, ngenes)] :
-        parent(gene).genes[reverse(mod1.((index(gene) + 1) : (index(gene) + ngenes - 2), ngenes))]
-    for g in grange
-        if cond(g)
-            j += 1
-            j in i && push!(genes, g)
+        parent(gene).genes[mod1.(index(gene) + 1 : index(gene) + ngenes - 1, ngenes)] :
+        parent(gene).genes[reverse(mod1.((index(gene) + 1) : (index(gene) + ngenes - 1), ngenes))]
+    # for g in grange
+    #     if cond(g)
+    #         j += 1
+    #         println(i, " ", j)
+    #         if j in i
+    #             push!(genes, g)
+    #         elseif j > maximum(i)
+    #             break
+    #         end
+    #     end
+    # end
+    condmatch = 0
+    k = 1
+    while condmatch <= maximum(i) && k <= length(grange)
+        if cond(grange[k])
+            condmatch += 1
+            if condmatch in i
+                push!(genes, grange[k])
+            end
         end
+        k += 1
     end
     return genes
 end

@@ -7,8 +7,8 @@ function oneline(v::AbstractString)
     R = split(v, '\n')
     buf = IOBuffer()
     for (i, r) in enumerate(R)
-        if i != lastindex(R) && (r[end] == '-' || occursin(' ', r))
-            print(buf, r, " ")
+        if i != lastindex(R) && (r[end] == '-' || occursin(' ', r))
+            print(buf, strip(r), " ")
         else
             print(buf, r)
         end
@@ -18,8 +18,8 @@ end
 oneline(v::Any) = v
 
 
-function findbreak(v, t)
-    i = t == 59 ?
+function findbreak(v, t; width = 80, margin = 21)
+    i = t == width - margin + 1 ?
         findlast('\n', v) :
         1
     j = i+t-1
@@ -36,20 +36,20 @@ end
 
 
 """
-    multiline(v, s::Symbol)
+    multiline(v, s::Symbol; width = 80, margin = 21, first_line_margin = 4)
 
-Return a `String` with newlines and spaces added so that it conforms to the GenBank line width.
+Return a `String` with newlines and spaces added so that it conforms to the specified line width, with the margin subtracted. For example, the line width for the GenBank format is 80, with a margin of 21, whereas for the EMBL format the margin is 19.
 """
-function multiline(v, s)
+function multiline(v, s; width = 80, margin = 21, first_line_margin = 3)
     v = string(v)
     s = string(s)
-    if length(v) + length(s) > 55 && !occursin('\n', v)
-        b = findbreak(v, 55 - length(s))
+    if length(v) + length(s) > width - margin - first_line_margin + 1 && !occursin('\n', v)
+        b = findbreak(v, width - margin - first_line_margin + 1 - length(s))
         v = v[1:b.start] * "\n" * v[b.stop:end]
-        b = findbreak(v, 59)
+        b = findbreak(v, width - margin + 1; width, margin)
         while !isnothing(b) && b.start < length(v)
             v = v[1:b.start] * "\n" * v[b.stop:end]
-            b = findbreak(v, 59)
+            b = findbreak(v, width - margin + 1; width, margin)
         end
     end
     return v
@@ -128,4 +128,20 @@ function reorder!(chr, pos = 1; reverse = false)
     sort!(chr.genes)
     chr.sequence = seq
     chr
+end
+
+function locus!(gene::AbstractGene, loc)
+    chr = parent(gene)
+    newgene = Gene(chr, index(gene), loc, feature(gene))
+    chr.genes[index(gene)] = newgene
+end
+
+
+function Base.sort!(genes::Vector{Gene}; kwargs...)
+    I = sortperm(genes; kwargs...)
+    oldgenes = deepcopy(genes)
+    for (i, gene) in enumerate(oldgenes[I])
+        genes[i] = Gene(parent(gene), UInt(i), locus(gene), feature(gene))
+    end
+    parent(genes[1]).genedata = parent(genes[1]).genedata[I, :]
 end

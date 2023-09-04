@@ -1,13 +1,13 @@
-# GenBank Reader
+# EMBL Reader
 
 struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
     io::S
 end
 
 """
-    GenBank.Reader(input::IO)
+    EMBL.Reader(input::IO)
 
-Create a data reader of the GenBank file format.
+Create a data reader of the EMBL file format.
 """
 function Reader(input::IO)
     if input isa TranscodingStream
@@ -65,7 +65,7 @@ end
 Parse lines encoding genomic position, returning the feature as a `Symbol`, and an instance of `Locus`.
 """
 function parseposition(line::String)
-    feature, posstring = split(strip(line), r" +")
+    FT, feature, posstring = split(strip(line), r" +")
     if occursin(r"(\.\.|\^)", posstring)
         position = UnitRange(parse.(Int, filter.(c->isnumeric(c), split(posstring, r"(\.\.|\^)(.*(\.\.|\^))?")))...)
         strand = occursin("complement", posstring) ? '-' : '+'
@@ -89,7 +89,7 @@ end
 
 
 """
-Parse footer (sequence) portion of a GenBank file, returning a `String`.
+Parse footer (sequence) portion of a EMBL file, returning a `String`.
 """
 function filterseq(io::IOBuffer)
     line = String(take!(io))
@@ -132,7 +132,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         end
 
         ### HEADER
-        if isheader && occursin(r"FEATURES", line)
+        if isheader && occursin(r"^FT", line)
             record.header = String(take!(iobuffer))
             isheader = false
 
@@ -140,13 +140,14 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             linecount == 1 ? print(iobuffer, line) : print(iobuffer, '\n', line)
 
         # Check if the footer has been reached
-        elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"ORIGIN", line))
+        elseif !isheader && !isfooter && (occursin(r"^SQ", line))
             # Stop parsing the file when the list of genes is over
             isfooter = true
             iobuffer = IOBuffer()
+        end
 
         ### BODY
-        elseif !isheader && !isfooter
+        if !isheader && !isfooter
             if position_spanning && occursin(r"  /", line)
                 position_spanning = false
                 spanningline = filter(x -> x != ' ', String(take!(iobuffer)))
@@ -160,7 +161,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             elseif position_spanning
                 print(iobuffer, line)
             end
-            if occursin(r"^ {5}\S", line)
+            if occursin(r"^FT   \S", line)
                 spanning = false
                 try
                     feature, locus = parseposition(line)
@@ -169,13 +170,13 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                     @error "parseposition(line) failed at line $linecount"
                 end
                 addgene!(record, feature, locus)
-            elseif !spanning && occursin(r"^ +/", line)
+            elseif !spanning && occursin(r"^FT +/", line)
                 if occursin(r"=", line)
                     if occursin("=\"", line)
-                        (qualifier, content) = match(r"^ +/([^=]+)=\"?([^\"]*)\"?$", line).captures
+                        (qualifier, content) = match(r"^FT +/([^=]+)=\"?([^\"]*)\"?$", line).captures
                         content = String(content)
                     else
-                        (qualifier, content) = match(r"^ +/(\S+)=(\S+)$", line).captures
+                        (qualifier, content) = match(r"^FT +/(\S+)=(\S+)$", line).captures
                         try
                             tmpcontent = Meta.parse(content)
                             tmpcontent isa Expr && throw(Meta.ParseError)
@@ -200,7 +201,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                 end
             elseif spanning
                 try
-                    content = match(r" {21}([^\"]*)\"?$", line)[1]
+                    content = match(r"FT {19}([^\"]*)\"?$", line)[1]
                 catch
                     @warn "Couldn't read content (line $linecount)"
                 end
@@ -227,7 +228,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     if isempty(record.header) && isempty(record.genes) && isempty(record.sequence)
         return nothing
     end
-    record.name = parseheader(record.header)
+    record.name = "" #parseheader(record.header)
     record.sequence = LongDNA{4}(filterseq(iobuffer))
     return record
 end

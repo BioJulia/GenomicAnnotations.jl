@@ -29,6 +29,20 @@ using Test
         end
     end
 
+    @testset "EMBL parsing" begin
+        open(EMBL.Writer, "example.embl") do w
+            write(w, chr)
+        end
+        embl = collect(open(EMBL.Reader, "example.embl"))[1]
+        @test begin
+            gbkbuf = IOBuffer()
+            emblbuf = IOBuffer()
+            print(gbkbuf, chr.genes[2:4])
+            print(emblbuf, embl.genes[2:4])
+            String(take!(gbkbuf)) == String(take!(emblbuf))
+        end
+    end
+
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))
         @test length(chr.sequence) == length(sequence(chr))
