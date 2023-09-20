@@ -24,12 +24,14 @@ function findbreak(v, t; width = 80, margin = 21)
         1
     j = i+t-1
     j >= lastindex(v) && return nothing
-    x = findlast(c -> c == ' ' || c == '-', v[1:j])
+    x = findlast(c -> c == ' ' || c == '-', v[j-t+1:j])
     if isnothing(x)
         return j:j+1
-    elseif x == ' '
+    elseif v[x] == ' '
+        x += j - t
         return x-1:x+1
     else
+        x += j - t
         return x:x+1
     end
 end
