@@ -57,7 +57,7 @@ function printgbk(chr::C) where {C <: Record}
     printgbk(io, chr)
 end
 function printgbk(io::IO, chr::C) where {C <: Record}
-    if chr.header[1] != '#'
+    if !isempty(chr.header) && !occursin(r"^#", chr.header)
         println(io, chr.header)
     else
         ### GFF3 header
