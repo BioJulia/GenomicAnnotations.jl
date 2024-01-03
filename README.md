@@ -26,6 +26,16 @@ end
 chr.genes[2].locus_tag = "test123"
 ```
 
+The `Locus` of a `Gene` retrieved with `locus(gene)`. The `Locus` itself is immutable, but can be updated with `locus!(gene, newlocus)`. For simplicity, `position(gene)` is shorthand for `locus(gene).position`.
+```julia
+# Create a new Locus, copying all fields of the old one but shifting the position by 1
+oldloc = locus(gene)
+locus!(gene, Locus(oldloc.position .+ 1, oldloc.strand, oldloc.complete_left, oldloc.complete_right, oldloc.order, oldloc.join))
+
+# Access the genomic positions of all genes
+position.(chr.genes)
+```
+
 Accessing properties that haven't been stored will return missing. For this reason, it often makes more sense to use `get()` than to access the property directly.
 ```julia
 # chr.genes[2].pseudo returns missing, so this will throw an error

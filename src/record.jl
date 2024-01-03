@@ -398,6 +398,7 @@ Base.iterate(loc::Locus) = iterate(loc.position)
 
 index(g::Gene) = getfield(g, :index)
 locus(g::Gene) = getfield(g, :locus)
+position(g::Gene) = getfield(g, :locus).position
 feature(g::Gene) = getfield(g, :feature)
 Base.parent(g::Gene) = getfield(g, :parent)
 function Base.parent(gs::AbstractVector{G}) where {G <: AbstractGene}
