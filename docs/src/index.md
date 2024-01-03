@@ -34,6 +34,16 @@ end
 chr.genes[2].locus_tag = "test123"
 ```
 
+The `Locus` of a `Gene` retrieved with `locus(gene)`. The `Locus` itself is immutable, but can be updated with `locus!(gene, newlocus)`. For simplicity, `position(gene)` is shorthand for `locus(gene).position`.
+```julia
+# Create a new Locus, copying all fields of the old one but shifting the position by 1
+oldloc = locus(gene)
+locus!(gene, Locus(oldloc.position .+ 1, oldloc.strand, oldloc.complete_left, oldloc.complete_right, oldloc.order, oldloc.join))
+
+# Access the genomic positions of all genes
+position.(chr.genes)
+```
+
 The macro `@genes` can be used to filter through the annotations (see [`@genes`](@ref)). The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
