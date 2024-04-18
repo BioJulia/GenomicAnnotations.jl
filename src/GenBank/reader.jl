@@ -140,7 +140,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             linecount == 1 ? print(iobuffer, line) : print(iobuffer, '\n', line)
 
         # Check if the footer has been reached
-        elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"ORIGIN", line))
+        elseif !isheader && !isfooter && (occursin(r"^BASE COUNT", line) || occursin(r"^ORIGIN", line))
             # Stop parsing the file when the list of genes is over
             isfooter = true
             iobuffer = IOBuffer()
