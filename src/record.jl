@@ -259,7 +259,15 @@ Return genomic sequence for `gene`. If `translate` is `true`, the sequence will 
 ```
 """
 function sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
-    if locus(gene).strand == '-'
+    pos = locus(gene).position
+    chrseq = parent(gene).sequence
+    if pos.stop > lastindex(chrseq)
+        p = pos.stop % lastindex(chrseq)
+        s = chrseq[pos.start:end] * chrseq[1:p]
+    elseif pos.stop > lastindex(chrseq) && locus(gene).strand == '-'
+        p = pos.stop % lastindex(chrseq)
+        s = reverse_complement(chrseq[pos.start:end] * chrseq[1:p])
+    elseif locus(gene).strand == '-'
         s = reverse_complement(parent(gene).sequence[locus(gene).position])
     else
         s = parent(gene).sequence[locus(gene).position]
@@ -298,7 +306,7 @@ iscomplement(gene::AbstractGene) = locus(gene).strand == '-'
 
 Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
 """
-iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :ribosomal_slippage, false)) && locus(gene).complete_right && locus(gene).complete_left
+iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false)) && locus(gene).complete_right && locus(gene).complete_left
 
 
 function appendstring(field, v::Bool)
