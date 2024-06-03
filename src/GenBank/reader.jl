@@ -79,9 +79,14 @@ function parseposition(line::String)
     order = Vector{UnitRange{Int}}()
     join = occursin("join", posstring)
     if join || occursin("order", posstring)
-        for m in eachmatch(r"\d+(\.\.|\^)\d+", posstring)
-            r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
-            push!(order, r[1]:r[2])
+        for m in eachmatch(r"[0-9.]+", posstring)
+            if occursin("..", m.match)
+                r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
+                push!(order, r[1]:r[2])
+            else
+                r = Meta.parse(m.match)
+                push!(order, r:r)
+            end
         end
     end
     return Symbol(feature), Locus(position, strand, complete_left, complete_right, order, join)
