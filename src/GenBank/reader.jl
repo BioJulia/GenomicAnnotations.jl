@@ -76,7 +76,7 @@ function parseposition(line::String)
     end
     complete_left = !occursin('<', posstring)
     complete_right = !occursin('>', posstring)
-    (!complete_left || !complete_right) && (posstring = replace(posstring, r"[<>]" => "")
+    (!complete_left || !complete_right) && (posstring = replace(posstring, r"[<>]" => ""))
     order = Vector{UnitRange{Int}}()
     join = occursin("join", posstring)
     if join || occursin("order", posstring)
