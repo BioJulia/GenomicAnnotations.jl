@@ -285,7 +285,7 @@ end
 
 
 Base.length(gene::AbstractGene) = length(locus(gene))
-Base.length(locus::Locus) = sum(map(length, locus.order))
+Base.length(locus::Locus) = isempty(locus.order) ? length(locus.position) : sum(map(length, locus.order))
 
 
 function sequence(record::Record)
