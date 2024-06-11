@@ -259,27 +259,23 @@ Return genomic sequence for `gene`. If `translate` is `true`, the sequence will 
 ```
 """
 function sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
-    pos = locus(gene).position
+    loc = locus(gene)
     chrseq = parent(gene).sequence
-    if pos.stop > lastindex(chrseq)
-        p = pos.stop % lastindex(chrseq)
-        s = chrseq[pos.start:end] * chrseq[1:p]
-    elseif pos.stop > lastindex(chrseq) && locus(gene).strand == '-'
-        p = pos.stop % lastindex(chrseq)
-        s = reverse_complement(chrseq[pos.start:end] * chrseq[1:p])
-    elseif locus(gene).strand == '-'
-        s = reverse_complement(parent(gene).sequence[locus(gene).position])
+    if isempty(loc.order)
+        s = iscomplement(gene) ? reverse_complement(chrseq[loc.position]) :
+                                 chrseq[loc.position]
     else
-        s = parent(gene).sequence[locus(gene).position]
+        s = iscomplement(gene) ? reverse_complement(reduce(*, map(x -> chrseq[x], loc.order))) :
+                                 reduce(*, map(x -> chrseq[x], loc.order))
     end
     if translate
         if preserve_alternate_start
-            BioSequences.translate(s)[1:end-1]
+            return BioSequences.translate(s)[1:end-1]
         else
-            aa"M" * BioSequences.translate(s)[2:end-1]
+            return aa"M" * BioSequences.translate(s)[2:end-1]
         end
     else
-        s
+        return s
     end
 end
 
