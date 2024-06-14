@@ -55,15 +55,32 @@ function gffstring(gene::Gene)
             end
         end
     end
-    join([parent(gene).name,
-        get(gene, :source, "."),
-        feature(gene),
-        locus(gene).position.start,
-        locus(gene).position.stop,
-        get(gene, :score, "."),
-        locus(gene).strand,
-        get(gene, :phase, "."),
-        String(take!(buf))], '\t')
+    if length(locus(gene).order) > 1
+        s = String(take!(buf))
+        res = IOBuffer()
+        for pos in locus(gene).order
+            println(res, join([parent(gene).name,
+                get(gene, :source, "."),
+                feature(gene),
+                pos.start,
+                pos.stop,
+                get(gene, :score, "."),
+                locus(gene).strand,
+                get(gene, :phase, "."),
+                s], '\t'))
+        end
+        String(take!(res))
+    else
+        join([parent(gene).name,
+            get(gene, :source, "."),
+            feature(gene),
+            locus(gene).position.start,
+            locus(gene).position.stop,
+            get(gene, :score, "."),
+            locus(gene).strand,
+            get(gene, :phase, "."),
+            String(take!(buf))], '\t') * "\n"
+    end
 end
 
 """
@@ -85,7 +102,7 @@ function printgff(io::IO, chrs::AbstractVector{Record{G}}) where G <: AbstractGe
     ### Body
     for chr in chrs
         for gene in chr.genes
-            println(iobuffer, gffstring(gene))
+            print(iobuffer, gffstring(gene))
         end
     end
     ### Footer
