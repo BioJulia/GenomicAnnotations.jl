@@ -352,6 +352,7 @@ iscomplete(locus::SpanLocus{Span}) = true
 iscomplete(locus::SpanLocus{OpenSpan}) = false
 iscomplete(locus::SpanLocus{OpenRightSpan}) = false
 iscomplete(locus::SpanLocus{OpenLeftSpan}) = false
+iscomplete(locus::PointLocus{T}) where T = true
 iscomplete(locus::Complement) = iscomplete(locus.loc)
 iscomplete(loci::Join) = all(iscomplete, loci.loc)
 iscomplete(loci::Order) = all(iscomplete, loci.loc)
