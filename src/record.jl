@@ -347,7 +347,7 @@ iscomplement(loc::AbstractLocus) = false
 
 Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
 """
-iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false)) && locus(gene).complete_right && locus(gene).complete_left
+iscomplete(gene::AbstractGene) = iscomplete(locus(gene)) && !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false))
 iscomplete(locus::SpanLocus{Span}) = true
 iscomplete(locus::SpanLocus{OpenSpan}) = false
 iscomplete(locus::SpanLocus{OpenRightSpan}) = false
