@@ -504,8 +504,8 @@ function Locus(s::T) where T <: AbstractString
     end
     ### SingleNucleotide
     occursin(r"^\d+$", s) && return PointLocus(parse(Int, s), SingleNucleotide)
-    m = match(r"(\d+)\^", s)
     ### BetweenNucleotides
+    m = match(r"^(\d+)\^", s)
     if !isnothing(m)
         return PointLocus(parse(Int, m[1]), BetweenNucleotides)
     end
@@ -523,6 +523,18 @@ function Locus(s::T) where T <: AbstractString
             OpenRightSpan
         end
         return SpanLocus(p, type)
+    end
+    m = match(r"^(<?)(>?)(\d+)$", s)
+    if !isnothing(m)
+        p = parse(Int, m[3])
+        type = if !isempty(m[1]) && !isempty(m[3])
+            OpenSpan
+        elseif !isempty(m[1])
+            OpenLeftSpan
+        else
+            OpenRightSpan
+        end
+        return SpanLocus(p:p, type)
     end
     @warn "Couldn't parse location descriptor \"$s\""
     return nothing
