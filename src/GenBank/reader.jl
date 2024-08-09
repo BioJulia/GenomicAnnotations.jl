@@ -62,35 +62,11 @@ end
 
 
 """
-Parse lines encoding genomic position, returning the feature as a `Symbol`, and an instance of `Locus`.
+Parse lines encoding genomic position, returning the feature as a `Symbol`, and an instance of `AbstractLocus`.
 """
 function parseposition(line::String)
-    feature, posstring = split(strip(line), r" +")
-    if occursin(r"(\.\.|\^)", posstring)
-        position = UnitRange(parse.(Int, filter.(c->isnumeric(c), split(posstring, r"(\.\.|\^)(.*(\.\.|\^))?")))...)
-        strand = occursin("complement", posstring) ? '-' : '+'
-    else
-        position = parse(Int, posstring)
-        position = position:position
-        strand = '.'
-    end
-    complete_left = !occursin('<', posstring)
-    complete_right = !occursin('>', posstring)
-    (!complete_left || !complete_right) && (posstring = replace(posstring, r"[<>]" => ""))
-    order = Vector{UnitRange{Int}}()
-    join = occursin("join", posstring)
-    if join || occursin("order", posstring)
-        for m in eachmatch(r"[0-9.]+", posstring)
-            if occursin("..", m.match)
-                r = Meta.parse.(split(m.match, r"(\.\.|\^)"))
-                push!(order, r[1]:r[2])
-            else
-                r = Meta.parse(m.match)
-                push!(order, r:r)
-            end
-        end
-    end
-    return Symbol(feature), Locus(position, strand, complete_left, complete_right, order, join)
+    feature, posstring = split(strip(string(line)), r" +")
+    return Symbol(feature), Locus(posstring)
 end
 
 
@@ -120,7 +96,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     header = ""
 
     feature = :source
-    locus = Locus()
+    loc = Locus("1..1")
 
 
     linecount = 0
@@ -169,12 +145,12 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             if occursin(r"^ {5}\S", line)
                 spanning = false
                 try
-                    feature, locus = parseposition(line)
+                    feature, loc = parseposition(line)
                 catch
                     println(line)
                     @error "parseposition(line) failed at line $linecount"
                 end
-                addgene!(record, feature, locus)
+                addgene!(record, feature, loc)
             elseif !spanning && occursin(r"^ +/", line)
                 if occursin(r"=", line)
                     if occursin("=\"", line)

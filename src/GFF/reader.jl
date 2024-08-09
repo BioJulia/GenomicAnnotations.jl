@@ -86,8 +86,12 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
                 TranscodingStreams.unread(input, UInt8.(c for c in line))
                 return record
             end
-            locus = Locus(parse(Int, sstart):parse(Int, send), strand[1])
-            addgene!(record, Symbol(feature), locus)
+            loc = if strand == "+"
+                SpanLocus(parse(Int, sstart):parse(Int, send), Span)
+            else
+                Complement(SpanLocus(parse(Int, sstart):parse(Int, send), Span))
+            end
+            addgene!(record, Symbol(feature), loc)
             if source != "." && ismissing(record.genes[end].source)
                 record.genes[end].source = source
             end

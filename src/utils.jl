@@ -77,73 +77,22 @@ function readgff(input)
     collect(open(GFF.Reader, input))
 end
 
-
-function relocate_gene(gene, pos, chrlen; reverse = false)
-    oldpos = locus(gene).position
-    newposition = if length(oldpos) == chrlen
-            oldpos
-        elseif reverse
-            (chrlen - mod1(oldpos.stop - pos - 1, chrlen)) : (chrlen - mod1(oldpos.start - pos - 1, chrlen))
-        elseif length(oldpos) < chrlen
-            mod1(oldpos.start - pos + 1, chrlen) : mod1(oldpos.stop - pos + 1, chrlen)
-        else
-            oldpos
-        end
-    newstrand = if !reverse
-            locus(gene).strand
-        elseif locus(gene).strand == '+'
-            '-'
-        elseif locus(gene).strand == '-'
-            '+'
-        else
-            locus(gene).strand
-        end
-    order = locus(gene).order
-    join = locus(gene).join
-    newlocus = Locus(newposition, newstrand, locus(gene).complete_right, locus(gene).complete_left, order, join)
-    Gene(parent(gene), index(gene), newlocus, feature(gene))
-end
-
-
 """
-    reorder!(chr, pos = 1; reverse = false)
+    relative_position(gene::AbstractGene, point::Symbol = :start)
 
-Reorder `chr` so that `pos` becomes the first position. If `reverse` is `true`, the reverse genome is reversed.
+Returns the relative position of `gene` on `parent(gene)`, on the interval (0,1]. The keyword `point` determines which of the `:start`, `:middle`, or `:stop` should be counted.
 """
-function reorder(chr, pos = 1; reverse = false)
-    newchr = deepcopy(chr)
-    reorder!(newchr, pos; reverse = reverse)
-end
-function reorder!(chr, pos = 1; reverse = false)
-    ## Reverse sequence
-    seq = reverse ?
-        BioSequences.reverse_complement(chr.sequence[pos+1:end] * chr.sequence[1:pos]) :
-        chr.sequence[pos:end] * chr.sequence[1:pos-1]
-    ## Recalculate gene loci
-    chrlen = length(chr.sequence)
-    genes = Gene[]
-    for gene in chr.genes
-        newgene = relocate_gene(gene, pos, chrlen; reverse = reverse)
-        push!(genes, newgene)
+relative_position(gene::AbstractGene, point = :start) = relative_position(parent(gene).sequence, locus(gene), point)
+function relative_position(chrseq, loc::AbstractLocus, point = :start)
+    if point == :start
+        return loc.start / length(chrseq)
+    elseif point == :stop
+        return loc.stop / length(chrseq)
+    elseif point == :middle
+        p1 = loc.start / length(chrseq)
+        p2 = loc.stop / length(chrseq)
+        return atan((sinpi(2p1) + sinpi(2p2)) / 2, (cospi(2p1) + cospi(2p2)) / 2) / 2π
+    else
+        error("`point` must be one of `:start`, `:middle`, or `:stop`")
     end
-    chr.genes = genes
-    sort!(chr.genes)
-    chr.sequence = seq
-    chr
-end
-
-function locus!(gene::AbstractGene, loc)
-    chr = parent(gene)
-    newgene = Gene(chr, index(gene), loc, feature(gene))
-    chr.genes[index(gene)] = newgene
-end
-
-
-function Base.sort!(genes::Vector{Gene}; kwargs...)
-    I = sortperm(genes; kwargs...)
-    oldgenes = deepcopy(genes)
-    for (i, gene) in enumerate(oldgenes[I])
-        genes[i] = Gene(parent(gene), UInt(i), locus(gene), feature(gene))
-    end
-    parent(genes[1]).genedata = parent(genes[1]).genedata[I, :]
 end

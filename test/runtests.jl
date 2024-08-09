@@ -5,9 +5,10 @@ using Test
 @testset "GenomicAnnotations" begin
     @testset "GenBank parsing" begin
         s = "     gene            1..1"
-        @test GenBank.parseposition(s) == (:gene, Locus(1:1, '+'))
+        @test !isnothing(GenBank.parseposition(s))
+        @test GenBank.parseposition(s) == (:gene, SpanLocus(1:1, Span))
         s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenBank.parseposition(s) == (:gene, Locus(3300:4052, '-', true, true, UnitRange{Int}[3300:4037, 4047:4052], false))
+        @test GenBank.parseposition(s) == (:gene, Complement(Order([Span(3300:4037), Span(4047:4052)])))
         chrs = collect(open(GenBank.Reader, "example.gbk"))
         @test length(chrs) == 2
         @test chrs[2].name == "plasmid1"
@@ -71,7 +72,7 @@ using Test
     end
 
     @testset "Adding/removing genes" begin
-        addgene!(chr, :CDS, Locus(300:390, '+'), locus_tag = "tag04")
+        addgene!(chr, :CDS, Span(300:390), locus_tag = "tag04")
         @test chr.genes[end].locus_tag == "tag04"
         delete!(chr.genes[end])
         @test chr.genes[end].locus_tag == "reg01"
@@ -108,12 +109,18 @@ using Test
     end
 
     @testset "Locus" begin
-        loc = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
-        @test Locus() == loc
         @test locus(chr.genes[2]) < locus(chr.genes[4])
         @test locus(chr.genes[2]) == locus(chr.genes[2])
         @test iscomplement(chr.genes[2]) == false
         @test iscomplement(chr.genes[5]) == true
+        @test sequence(chr.sequence, Locus("1..3")) == dna"aaa"
+        @test sequence(chr.sequence, Locus("<1..>3")) == dna"aaa"
+        @test sequence(chr.sequence, Locus("3..8"), translate = true) == aa"M"
+        @test sequence(chr.sequence, Locus("1^2")) == dna"aa"
+        @test sequence(chr.sequence, Locus("1")) == dna"a"
+        @test sequence(chr.sequence, Locus("join(1..3,11..13)")) == sequence(chr.sequence, Locus("order(1..3,11..13)")) == dna"aaaata"
+        @test sequence(chr.sequence, Locus("complement(join(1..3,11..13))")) == sequence(chr.sequence, Locus("complement(order(1..3,11..13))")) == dna"tatttt"
+        @test sequence(chr.sequence, Locus("join(complement(1..3),complement(11..13))")) == sequence(chr.sequence, Locus("order(complement(1..3),complement(11..13))")) == dna"ttttat"
     end
 
     seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"
@@ -127,5 +134,13 @@ using Test
         @test chr.header == ""
         @test chr.genes == Gene[]
         @test names(chr.genedata) == []
+    end
+
+    @testset "Utils" begin
+        seq = dna"a"^100
+        @test relative_position(seq, Locus("1..10"), :start) == 1/100
+        @test relative_position(seq, Locus("1..10"), :stop) == 10/100
+        @test relative_position(seq, Locus("1..10"), :middle) ≈ 5.5/100
+        @test relative_position(seq, Locus("join(100,1..10"), :middle) == 5/100
     end
 end

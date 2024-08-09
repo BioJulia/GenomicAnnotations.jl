@@ -55,10 +55,10 @@ function gffstring(gene::Gene)
             end
         end
     end
-    if length(locus(gene).order) > 1
+    if locus(gene).position isa Vector
         s = String(take!(buf))
         res = IOBuffer()
-        for pos in locus(gene).order
+        for pos in locus(gene).position
             println(res, join([parent(gene).name,
                 get(gene, :source, "."),
                 feature(gene),
@@ -74,8 +74,8 @@ function gffstring(gene::Gene)
         join([parent(gene).name,
             get(gene, :source, "."),
             feature(gene),
-            locus(gene).position.start,
-            locus(gene).position.stop,
+            locus(gene).start,
+            locus(gene).stop,
             get(gene, :score, "."),
             locus(gene).strand,
             get(gene, :phase, "."),

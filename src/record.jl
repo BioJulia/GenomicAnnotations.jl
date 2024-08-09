@@ -11,40 +11,71 @@ and may be removed in the future.
 abstract type AbstractGene end
 
 
+abstract type AbstractLocus end
+
+abstract type AbstractDescriptor end
 """
-Struct for storing information on genomic locations. `strand` can be '+', '-',
-or '.' when the strand is irrelevant. `order` is used to store discontiguous
-sequences, indicated in the GenBank file with the order() and join() operators.
+Describes a single nucleotide.
 """
-struct Locus
-    position::UnitRange{Int}
-    strand::Char
-    complete_left::Bool
-    complete_right::Bool
-    order::Vector{UnitRange{Int}}
-    join::Bool
+abstract type SingleNucleotide <: AbstractDescriptor end
+"""
+Describes a site inbetween two nucleotides, e.g. a cleavage site ("1^2"). `position` points to the nucleotide to the left of the site ("1" in the previous example).
+"""
+abstract type BetweenNucleotides <: AbstractDescriptor end
+"""
+Describes a normal locus, e.g. "1..1000"
+"""
+abstract type Span <: AbstractDescriptor end
+abstract type OpenRightSpan <: AbstractDescriptor end
+abstract type OpenLeftSpan <: AbstractDescriptor end
+abstract type OpenSpan <: AbstractDescriptor end
+"""
+Not yet implemented.
+Describes a remote entry, e.g. exons found on another chromosome.
+"""
+abstract type Remote end
+
+struct PointLocus{T} <: AbstractLocus where {T <: AbstractDescriptor}
+    position::Int
+    descriptor::Type{T}
 end
 
+struct SpanLocus{T} <: AbstractLocus where {T <: AbstractDescriptor}
+    position::UnitRange{Int}
+    descriptor::Type{T}
+end
 
-"""
-    Locus()
-    Locus(position::UnitRange{Int})
-    Locus(position::UnitRange{Int}, strand::Char)
+struct Join{L <: AbstractLocus} <: AbstractLocus
+    loc::Vector{L}
+end
 
-"""
-Locus() = Locus(1:1, '.', true, true, UnitRange{Int}[], false)
-Locus(position::UnitRange{Int}) = Locus(position, '.', true, true, UnitRange{Int}[], false)
-Locus(position::UnitRange{Int}, strand::Char) = Locus(position, strand, true, true, UnitRange{Int}[], false)
-Locus(position::UnitRange{Int}, strand::Char, complete_left, complete_right) = Locus(position, strand, complete_left, complete_right, UnitRange{Int}[], false)
+struct Order{L <: AbstractLocus} <: AbstractLocus
+    loc::Vector{L}
+end
 
-Base.convert(::Type{Locus}, x::UnitRange{Int}) = Locus(x)
-function Base.convert(::Type{Locus}, x::StepRange{Int, Int})
-    if x.step == -1
-        return Locus(x.stop:x.start, '-')
-    elseif x.step == 1
-        return Locus(x.start:x.stop)
+struct Complement{L <: Union{PointLocus{T} where T, SpanLocus{T} where T, Join, Order}} <: AbstractLocus
+    loc::L
+end
+
+Locus() = PointLocus(1, SingleNucleotide)
+
+Span(p) = SpanLocus(p, Span)
+OpenRightSpan(p) = SpanLocus(p, OpenRightSpan)
+OpenLeftSpan(p) = SpanLocus(p, OpenLeftSpan)
+OpenSpan(p) = SpanLocus(p, OpenSpan)
+
+SingleNucleotide(p) = PointLocus(p, SingleNucleotide)
+BetweenNucleotides(p) = PointLocus(p, BetweenNucleotides)
+
+Base.convert(::Type{Span}, p::UnitRange{Int}) = Span(p)
+Base.convert(::Type{Complement{L}}, p::UnitRange{Int}) where L <: AbstractLocus = Complement(L(p))
+function Base.convert(::Type{Span}, p::StepRange{Int, Int})
+    if p.step == -1
+        return Complement(Span(p.stop:p.start))
+    elseif p.step == 1
+        return Span(p.start:p.stop)
     end
-    throw(DomainError(x, "`x` must have a step of 1 or -1"))
+    throw(DomainError(1, "`p` must have a step of 1 or -1"))
 end
 
 
@@ -71,7 +102,7 @@ Record(args...) = Record{Gene}(args...)
 struct Gene <: AbstractGene
     parent::Record{Gene}
     index::UInt
-    locus::Locus
+    locus::AbstractLocus
     feature::Symbol
 end
 
@@ -85,7 +116,7 @@ iscircular(c::Record{T}) where {T<:AbstractGene} = c.circular
 """
     addgene!(chr::Record, feature, locus; kw...)
 
-Add gene to `chr`. `locus` can be a `Locus`, a UnitRange, or a StepRange (for
+Add gene to `chr`. `locus` can be an `AbstractLocus`, a String, a UnitRange, or a StepRange (for
 decreasing ranges, which will be annotated on the complementary strand).
 
 # Example
@@ -95,17 +126,17 @@ addgene!(chr, "CDS", 1:756;
     product = "Chromosomal replication initiator protein dnaA")
 ```
 """
-function addgene!(chr::Record{Gene}, feature, locus; kw...)
-    locus = convert(Locus, locus)
+function addgene!(chr::Record{Gene}, feature, loc::AbstractLocus; kw...)
     push!(chr.genedata, fill(missing, size(chr.genedata, 2)))
     index = UInt32(length(chr.genes) + 1)
-    gene = Gene(chr, index, locus, feature)
+    gene = Gene(chr, index, loc, feature)
     for (k, v) in kw
         Base.setproperty!(gene, k, v)
     end
     push!(chr.genes, gene)
     return gene
 end
+addgene!(chr::Record{Gene}, feature, loc; kw...) = addgene!(chr, feature, Locus(loc); kw...)
 
 
 """
@@ -116,7 +147,6 @@ Delete `gene` from `parent(gene)`. Warning: does not work when broadcasted! Use
 """
 function Base.delete!(gene::AbstractGene)
     i = index(gene)
-    #deleteat!(parent(gene).genedata, i)
     deleteat!(parent(gene).genes, i)
     nothing
 end
@@ -259,29 +289,40 @@ Return genomic sequence for `gene`. If `translate` is `true`, the sequence will 
 ```
 """
 function sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
-    loc = locus(gene)
-    chrseq = parent(gene).sequence
-    if isempty(loc.order)
-        s = iscomplement(gene) ? reverse_complement(chrseq[loc.position]) :
-                                 chrseq[loc.position]
-    else
-        s = iscomplement(gene) ? reverse_complement(reduce(*, map(x -> chrseq[x], loc.order))) :
-                                 reduce(*, map(x -> chrseq[x], loc.order))
-    end
+    seq = _sequence(parent(gene).sequence, locus(gene))
     if translate
         if preserve_alternate_start
-            return BioSequences.translate(s)[1:end-1]
-        else
-            return aa"M" * BioSequences.translate(s)[2:end-1]
+            return BioSequences.translate(seq)[1:end-1]
         end
-    else
-        return s
+        return aa"M" * BioSequences.translate(seq)[2:end-1]
     end
+    return seq
 end
+
+function sequence(chrseq, loc::AbstractLocus; translate = false, preserve_alternate_start = false)
+    seq = _sequence(chrseq, loc)
+    if translate
+        if preserve_alternate_start
+            return BioSequences.translate(seq)[1:end-1]
+        end
+        return aa"M" * BioSequences.translate(seq)[2:end-1]
+    end
+    return seq
+end
+
+_sequence(chrseq, loc::SpanLocus) = chrseq[loc.position]
+_sequence(chrseq, loc::PointLocus{SingleNucleotide}) = chrseq[loc.position:loc.position]
+_sequence(chrseq, loc::PointLocus{BetweenNucleotides}) = chrseq[loc.position:(loc.position + 1)]
+_sequence(chrseq, loc::Complement) = reverse_complement(_sequence(chrseq, loc.loc))
+_sequence(chrseq, loci::Join) = *([_sequence(chrseq, loc) for loc in loci.loc]...)
+_sequence(chrseq, loci::Order) = *([_sequence(chrseq, loc) for loc in loci.loc]...)
 
 
 Base.length(gene::AbstractGene) = length(locus(gene))
-Base.length(locus::Locus) = isempty(locus.order) ? length(locus.position) : sum(map(length, locus.order))
+Base.length(locus::PointLocus) = 1
+Base.length(locus::SpanLocus) = length(locus.position)
+Base.length(locus::Union{Join, Order}) = sum(map(length, locus.loc))
+Base.length(locus::Complement) = length(locus.loc)
 
 
 function sequence(record::Record)
@@ -290,11 +331,15 @@ end
 
 
 """
-    iscomplement(gene)
+    iscomplement(gene::AbstractGene)
+    iscomplement(loc::AbstractLocus)
 
-Return `true` if `locus(gene).compliment == '-'`, otherwise return `false`.
+Return `true` if `loc`/`locus(gene)` is a `Compliment`, or if it is a `Join` or `Order` whose elements are all `Complement`s. Otherwise return `false`.
 """
-iscomplement(gene::AbstractGene) = locus(gene).strand == '-'
+iscomplement(gene::AbstractGene) = iscomplement(locus(gene))
+iscomplement(loc::Union{Join, Order}) = all(iscomplement, loc.loc)
+iscomplement(loc::Complement) = true
+iscomplement(loc::AbstractLocus) = false
 
 
 """
@@ -303,6 +348,13 @@ iscomplement(gene::AbstractGene) = locus(gene).strand == '-'
 Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
 """
 iscomplete(gene::AbstractGene) = !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false)) && locus(gene).complete_right && locus(gene).complete_left
+iscomplete(locus::SpanLocus{Span}) = true
+iscomplete(locus::SpanLocus{OpenSpan}) = false
+iscomplete(locus::SpanLocus{OpenRightSpan}) = false
+iscomplete(locus::SpanLocus{OpenLeftSpan}) = false
+iscomplete(locus::Complement) = iscomplete(locus.loc)
+iscomplete(loci::Join) = all(iscomplete, loci.loc)
+iscomplete(loci::Order) = all(iscomplete, loci.loc)
 
 
 function appendstring(field, v::Bool)
@@ -359,31 +411,24 @@ function Base.show(io::IO, genes::Vector{AbstractGene})
 end
 
 
-function Base.show(io::IO, locus::Locus)
-    s = ""
-    locus.strand == '-'     && (s *= "complement(")
-    !locus.complete_left    && (s *= ">")
-    if length(locus.order) > 0
-        if locus.join
-            s *= "join(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
-        else
-            s *= "order(" * join([join((r.start, r.stop), "..") for r in locus.order], ",") * ")"
-        end
-    else
-        s *= join((locus.position.start, locus.position.stop), "..")
-    end
-    !locus.complete_right   && (s *= "<")
-    locus.strand == '-'     && (s *= ")")
-    print(io, s)
+Base.show(io::IO, locus::PointLocus{SingleNucleotide}) = print(io, string(locus.position))
+Base.show(io::IO, locus::PointLocus{BetweenNucleotides}) = print(io, string(locus.position, "^", locus.position + 1))
+Base.show(io::IO, locus::SpanLocus{Span}) = print(io, string(locus.position.start, "..", locus.position.stop))
+Base.show(io::IO, locus::SpanLocus{OpenSpan}) = print(io, string("<", locus.position.start, "..", ">", locus.position.stop))
+Base.show(io::IO, locus::SpanLocus{OpenLeftSpan}) = print(io, string("<", locus.position.start, "..", locus.position.stop))
+Base.show(io::IO, locus::SpanLocus{OpenRightSpan}) = print(io, string(locus.position.start, "..", ">", locus.position.stop))
+Base.show(io::IO, locus::Join) = print(io, string("join(", join(locus.loc, ","), ")"))
+Base.show(io::IO, locus::Order) = print(io, string("order(", join(locus.loc, ","), ")"))
+function Base.show(io::IO, locus::Complement)
+    print(io, "complement(", string(locus.loc), ")")
 end
-
 
 Base.copy(chr::Record) = deepcopy(chr)
 Base.copy(gene::AbstractGene) = deepcopy(gene)
 
 
-function Base.isless(l1::Locus, l2::Locus)
-    if (l1.position.start < l2.position.start) || (l1.position.start == l2.position.start && l1.position.stop > l2.position.stop)
+function Base.isless(l1::AbstractLocus, l2::AbstractLocus)
+    if (l1.start < l2.start) || (l1.start == l2.start && l1.stop > l2.stop)
         return true
     end
     return false
@@ -391,14 +436,26 @@ end
 Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (feature(g1) == "gene" && feature(g2) != "gene")) || (locus(g1) < locus(g2))
 
 
-function Base.:(==)(x::Locus, y::Locus)
-    (x.position == y.position) && (x.strand == y.strand) && (x.complete_left == y.complete_left) && (x.complete_right == y.complete_right) && (x.order == y.order)
-end
+Base.:(==)(loc1::SpanLocus{Span}, loc2::SpanLocus{Span}) = loc1.position == loc2.position
+Base.:(==)(loc1::PointLocus{SingleNucleotide}, loc2::PointLocus{SingleNucleotide}) = loc1.position == loc2.position
+Base.:(==)(loc1::Join{T}, loc2::Join{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
+Base.:(==)(loc1::Order{T}, loc2::Order{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
+Base.:(==)(loc1::Complement{T}, loc2::Complement{T}) where {T <: AbstractLocus} = loc1.loc == loc2.loc
+Base.:(==)(loc1::AbstractLocus, loc2::AbstractLocus) = false
 
-Base.in(loc::Locus, r::UnitRange{Int}) = loc.position.start in r && loc.position.stop in r
-Base.in(loc1::Locus, loc2::Locus) = loc1 in loc2.position
-Base.intersect(loc1::Locus, loc2::Locus) = intersect(loc1.position, loc2.position)
-Base.iterate(loc::Locus) = iterate(loc.position)
+Base.in(loc::PointLocus{SingleNucleotide}, r::UnitRange) = loc.position in r
+Base.in(loc::PointLocus{BetweenNucleotides}, r::UnitRange) = loc.position in r[1:end-1]
+Base.in(loc::SpanLocus, r::UnitRange) = loc.position in r
+Base.in(loc::Join, r::UnitRange) = all(in.(loc.loc, r))
+Base.in(loc::Order, r::UnitRange) = all(in.(loc.loc, r))
+Base.in(loc::Complement, r::UnitRange) = all(in.(loc.loc, r))
+
+# Base.intersect(loc1::PointLocus{SingleNucleotide}, loc2::A)
+# Base.intersect(loc1::Locus, loc2::Locus) = intersect(loc1.position, loc2.position)
+
+Base.iterate(loc::PointLocus{SingleNucleotide}) = iterate(loc.position)
+Base.iterate(loc::SpanLocus{T}) where T = iterate(loc.position)
+Base.iterate(loc::AbstractLocus) = iterate(union(x.loc for x in loc.loc))
 
 index(g::Gene) = getfield(g, :index)
 locus(g::Gene) = getfield(g, :locus)
@@ -412,18 +469,61 @@ end
 
 
 """
-    locus!(gene, loc::Locus)
+    locus!(gene::AbstractGene, loc)
+    locus!(gene::AbstractGene, loc::AbstractLocus)
 
-Replace `gene` with a new `Gene` with `loc` as its `Locus`.
+Replace `gene` with a new `Gene` with `loc` as its `Locus`. If `loc` is not an `AbstractLocus`, it is parsed with `Locus(loc)`.
 """
-function locus!(gene::AbstractGene, pos::UnitRange{Int})
-    ol = locus(gene)
-    newloc = Locus(pos, ol.strand, ol.complete_left, ol.complete_right, ol.order, ol.join)
-    locus!(gene, newloc)
-end
-function locus!(gene::AbstractGene, loc::Locus)
+locus!(gene::AbstractGene, x) = locus!(gene, Locus(x))
+function locus!(gene::AbstractGene, loc::AbstractLocus)
     chr = parent(gene)
     newgene = Gene(chr, index(gene), loc, feature(gene))
     setindex!(chr.genes, newgene, index(gene))
     newgene
+end
+
+
+"""
+    Locus(s::AbstractString)
+
+Parse `s` as a GenBank location descriptor and return an appropriate `AbstractLocus`.
+"""
+function Locus(s::T) where T <: AbstractString
+    ### Complement
+    if occursin(r"^complement", s)
+        return Complement(Locus(s[12:end-1]))
+    end
+    ### Join
+    if occursin(r"^join", s)
+        S = split(s[6:end-1], ',')
+        return Join([Locus(z) for z in S])
+    end
+    if occursin(r"^order", s)
+        S = split(s[7:end-1], ',')
+        return Order([Locus(z) for z in S])
+    end
+    ### SingleNucleotide
+    occursin(r"^\d+$", s) && return PointLocus(parse(Int, s), SingleNucleotide)
+    m = match(r"(\d+)\^", s)
+    ### BetweenNucleotides
+    if !isnothing(m)
+        return PointLocus(parse(Int, m[1]), BetweenNucleotides)
+    end
+    ### Span
+    m = match(r"^(<?)(\d+)..(>?)(\d+)$", s)
+    if !isnothing(m)
+        p = parse(Int, m[2]):parse(Int, m[4])
+        type = if all(isempty, m.captures[[1,3]])
+            Span
+        elseif all(!isempty, m.captures[[1,3]])
+            OpenSpan
+        elseif !isempty(m.captures[1])
+            OpenLeftSpan
+        else
+            OpenRightSpan
+        end
+        return SpanLocus(p, type)
+    end
+    @warn "Couldn't parse location descriptor \"$s\""
+    return nothing
 end

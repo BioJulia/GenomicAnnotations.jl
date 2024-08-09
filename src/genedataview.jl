@@ -20,7 +20,6 @@ end
 
 
 function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
-    # GeneDataView(parent.(genes), getfield.(genes, Ref(:index)), name)
     GeneDataView(parent.(genes), index.(genes), name)
 end
 
@@ -36,15 +35,52 @@ function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene
     return x
 end
 
-
-function Base.getproperty(locus::Locus, name::Symbol)
-    if name == :start
-        locus.position.start
-    elseif name == :stop
-        locus.position.stop
-    else
-        getfield(locus, name)
+function Base.getproperty(locus::SpanLocus{T}, s::Symbol) where T
+    if s == :start
+        return first(locus.position)
+    elseif s == :stop
+        return last(locus.position)
+    elseif s == :strand
+        return '+'
     end
+    return getfield(locus, s)
+end
+
+function Base.getproperty(locus::PointLocus{T}, s::Symbol) where T
+    if s == :start
+        return first(locus.position)
+    elseif s == :stop
+        return last(locus.position)
+    elseif s == :strand
+        return '+'
+    end
+    return getfield(locus, s)
+end
+
+function Base.getproperty(locus::Complement{T}, s::Symbol) where T
+    if s == :start
+        return first(locus.loc.position)
+    elseif s == :stop
+        return last(locus.loc.position)
+    elseif s == :position
+        return locus.loc.position
+    elseif s == :strand
+        return '-'
+    end
+    return getfield(locus, s)
+end
+
+function Base.getproperty(locus::Union{Join{T}, Order{T}}, s::Symbol) where T
+    if s == :start
+        return first(locus.loc[1].position)
+    elseif s == :stop
+        return last(locus.loc[end].position)
+    elseif s == :position
+        return Iterators.flatten(loc.position for loc in locus.loc)
+    elseif s == :strand
+        return locus.loc[1].strand
+    end
+    return getfield(locus, s)
 end
 
 
