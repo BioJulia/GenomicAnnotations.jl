@@ -141,6 +141,6 @@ using Test
         @test relative_position(seq, Locus("1..10"), :start) == 1/100
         @test relative_position(seq, Locus("1..10"), :stop) == 10/100
         @test relative_position(seq, Locus("1..10"), :middle) ≈ 5.5/100
-        @test relative_position(seq, Locus("join(100,1..10"), :middle) == 5/100
+        @test relative_position(seq, Locus("join(100,1..10)"), :middle) == 5/100
     end
 end
