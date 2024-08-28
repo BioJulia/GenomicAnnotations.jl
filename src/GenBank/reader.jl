@@ -113,12 +113,12 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         end
 
         # Catch cases where there's no header
-        if linecount == 1 && occursin(r"gene", line)
+        if linecount == 1 && @view(line[1:9]) == "     gene"
             isheader = false
         end
 
         ### HEADER
-        if isheader && line[1:8] == "FEATURES"
+        if isheader && @view(line[1:8]) == "FEATURES"
             record.header = String(take!(iobuffer))
             isheader = false
 
