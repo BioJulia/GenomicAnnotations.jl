@@ -65,8 +65,12 @@ end
 Parse lines encoding genomic position, returning the feature as a `Symbol`, and an instance of `AbstractLocus`.
 """
 function parseposition(line::String)
-    feature, posstring = split(strip(string(line)), r" +")
-    return Symbol(feature), Locus(posstring)
+    f1 = findfirst(!=(' '), line)
+    f2 = f1 + findfirst(==(' '), @view(line[f1:end])) - 1
+    feature = Symbol(@view(line[f1:(f2-1)]))
+    p1 = f2 + findfirst(!=(' '), @view(line[f2:end])) - 1
+    loc = Locus(@view(line[p1:end]))
+    return feature, loc
 end
 
 
@@ -114,7 +118,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         end
 
         ### HEADER
-        if isheader && occursin(r"FEATURES", line)
+        if isheader && line[1:8] == "FEATURES"
             record.header = String(take!(iobuffer))
             isheader = false
 
@@ -129,19 +133,19 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 
         ### BODY
         elseif !isheader && !isfooter
-            if position_spanning && occursin(r"  /", line)
-                position_spanning = false
-                spanningline = filter(x -> x != ' ', String(take!(iobuffer)))
-                try
-                    feature, locus = parseposition(spanningline)
-                catch
-                    println(spanningline)
-                    println(line)
-                    @error "parseposition(spanningline) failed at line $linecount"
-                end
-            elseif position_spanning
-                print(iobuffer, line)
-            end
+            # if position_spanning && occursin(r"  /", line)
+            #     position_spanning = false
+            #     spanningline = filter(x -> x != ' ', String(take!(iobuffer)))
+            #     try
+            #         feature, locus = parseposition(spanningline)
+            #     catch
+            #         println(spanningline)
+            #         println(line)
+            #         @error "parseposition(spanningline) failed at line $linecount"
+            #     end
+            # elseif position_spanning
+            #     print(iobuffer, line)
+            # end
             if occursin(r"^ {5}\S", line)
                 spanning = false
                 try
@@ -152,12 +156,19 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
                 end
                 addgene!(record, feature, loc)
             elseif !spanning && occursin(r"^ +/", line)
-                if occursin(r"=", line)
+                if occursin("=", line)
                     if occursin("=\"", line)
-                        (qualifier, content) = match(r"^ +/([^=]+)=\"?([^\"]*)\"?$", line).captures
-                        content = String(content)
+                        q1 = findfirst(==('/'), line) + 1
+                        q2 = q1 + findfirst(==('='), @view(line[q1:end])) - 1
+                        qualifier = line[q1:(q2-1)]
+                        c1 = q2 + findfirst(!=('='), @view(line[q2:end]))
+                        content = line[c1:end-1]
                     else
-                        (qualifier, content) = match(r"^ +/(\S+)=(\S+)$", line).captures
+                        q1 = findfirst(==('/'), line) + 1
+                        q2 = q1 + findfirst(==('='), @view(line[q1:end])) - 1
+                        qualifier = line[q1:(q2-1)]
+                        c1 = q2 + findfirst(!=('='), @view(line[q2:end])) - 1
+                        content = line[c1:end]
                         try
                             tmpcontent = Meta.parse(content)
                             tmpcontent isa Expr && throw(Meta.ParseError)
@@ -177,17 +188,16 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
 
                 else
                     # Qualifiers without a value assigned to them end up here
-                    qualifier = split(line, '/')[2]
+                    q1 = findfirst(==('/'), line) + 1
+                    qualifier = line[q1:end]
                     pushproperty!(record.genes[end], Symbol(qualifier), true)
                 end
             elseif spanning
-                try
-                    content = match(r" {21}([^\"]*)\"?$", line)[1]
-                catch
-                    @warn "Couldn't read content (line $linecount)"
-                end
                 if line[end] == '"'
+                    content = line[22:end-1]
                     spanning = false
+                else
+                    content = line[22:end]
                 end
                 if eltype(record.genedata[!, Symbol(qualifier)]).b <: AbstractArray
                     record.genedata[!, Symbol(qualifier)][end][end] = oneline(Base.getproperty(record.genes[end], Symbol(qualifier))[end] * "\n" * content)
@@ -201,7 +211,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
             if line == "//"
                 break
             end
-            if occursin(r"^ ", line)
+            if line[1] == ' '
                 print(iobuffer, line)
             end
         end
