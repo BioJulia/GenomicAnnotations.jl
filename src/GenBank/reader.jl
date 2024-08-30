@@ -164,19 +164,10 @@ Parse and return one chromosome entry.
 function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     eof(stream) && return nothing
     iobuffer = IOBuffer()
-    isheader = true
-    isfooter = false
-    spanning = false
-    position_spanning = false
-    qualifier = String("")
-    content = String("")
-    header = ""
-
     feature = :source
     loc = Locus("1..1")
-
-
     linecount = 0
+
     ### HEADER
     while !eof(stream)
         line = readuntil(stream, UInt8('\n'), keep = false)
@@ -202,7 +193,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         line = readuntil(stream, UInt8('\n'), keep = true)
         linecount += 1
         length(line) <= 1 && continue
-        if line[6] != UInt8(' ') && all(==(UInt8(' ')), line[1:5])
+        if length(line) > 22 && line[6] != UInt8(' ') && all(==(UInt8(' ')), line[1:5])
             if geneindex > 0
                 parsefeature!(record, geneindex, take!(genebuffer))
             end

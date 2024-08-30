@@ -262,7 +262,7 @@ function pushproperty!(chr::Record, ind::Integer, qualifier::Symbol, value::T; f
     else
         s = size(gd, 1)
         isempty(names(gd)) ?
-            gd[!, qualifier] = Union{Missing, typeof(value)}[value] :
+            gd[!, qualifier] = Union{Missing, T}[value] :
             gd[!, qualifier] = missings(T, s)
         gd[ind, qualifier] = value
     end
@@ -359,7 +359,11 @@ function appendstring(field, v::Union{Number, Symbol})
     return "\n" * join(fill(' ', 21)) * "/$field=" * string(v)
 end
 function appendstring(field, v)
-    v = string("\"", v, "\"")
+    v = if v[[1,end]] == ['(', ')']
+        string(v)
+    else
+        string("\"", v, "\"")
+    end
     v = multiline(v, field)
     v = replace(v, "\n" => "\n" * join(fill(' ', 21)))
     return "\n" * join(fill(' ', 21)) * "/$field=" * v
