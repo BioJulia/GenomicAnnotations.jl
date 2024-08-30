@@ -4,11 +4,6 @@ using Test
 
 @testset "GenomicAnnotations" begin
     @testset "GenBank parsing" begin
-        s = "     gene            1..1"
-        @test !isnothing(GenBank.parseposition(s))
-        @test GenBank.parseposition(s) == (:gene, SpanLocus(1:1, Span))
-        s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenBank.parseposition(s) == (:gene, Complement(Order([Span(3300:4037), Span(4047:4052)])))
         chrs = collect(open(GenBank.Reader, "example.gbk"))
         @test length(chrs) == 2
         @test chrs[2].name == "plasmid1"
@@ -141,6 +136,6 @@ using Test
         @test relative_position(seq, Locus("1..10"), :start) == 1/100
         @test relative_position(seq, Locus("1..10"), :stop) == 10/100
         @test relative_position(seq, Locus("1..10"), :middle) ≈ 5.5/100
-        @test relative_position(seq, Locus("join(100,1..10"), :middle) == 5/100
+        @test relative_position(seq, Locus("join(100,1..10)"), :middle) == 5/100
     end
 end

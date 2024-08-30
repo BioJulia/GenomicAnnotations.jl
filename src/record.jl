@@ -130,14 +130,13 @@ function addgene!(chr::Record{Gene}, feature, loc::AbstractLocus, geneindex; kw.
     push!(chr.genedata, fill(missing, size(chr.genedata, 2)))
     gene = Gene(chr, geneindex, loc, feature)
     for (k, v) in kw
-        # pushproperty!(gene, k, v)
         pushproperty!(chr, geneindex, k, v)
     end
     push!(chr.genes, gene)
     return gene
 end
-addgene!(chr::Record{Gene}, feature, loc; kw...) = addgene!(chr, feature, Locus(loc); kw...)
-addgene!(chr, feature, loc; kw...) = addgene!(chr, feature, loc, UInt32(length(chr.genes) + 1); kw...)
+addgene!(chr::Record{Gene}, feature, loc::AbstractString, geneindex; kw...) = addgene!(chr, feature, Locus(loc), geneindex; kw...)
+addgene!(chr::Record{Gene}, feature, loc; kw...) = addgene!(chr, feature, loc, UInt32(length(chr.genes) + 1); kw...)
 
 
 """
