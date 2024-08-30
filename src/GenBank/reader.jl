@@ -683,63 +683,81 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     linecount = 0
     ### HEADER
     while !eof(stream)
-        line = readline(stream)
+        line = readuntil(stream, UInt8('\n'), keep = true)
         linecount += 1
 
-        if length(line) == 0
-            continue
-        end
+        length(line) <= 1 && continue
 
         # Catch cases where there's no header
-        if linecount == 1 && occursin(r"^     gene", line)
+        if linecount == 1 && all(==(UInt8(' ')), line[1:5])
             missingheader = true
             break
         end
 
-        if occursin(r"^FEATURES", line)
+        if length(line) >= 8 && line[1:8] == codeunits("FEATURES")
             record.header = String(take!(iobuffer))
             break
         else
-            linecount == 1 ? print(iobuffer, line) : print(iobuffer, '\n', line)
+            linecount == 1 ? write(iobuffer, line) : write(iobuffer, '\n', line)
         end
     end
 
     ### BODY
-    genebuffer = IOBuffer()
     geneindex = 0
+    genebuffer = IOBuffer()
+    # while !eof(stream)
+    #     line = readline(stream)
+    #     linecount += 1
+
+    #     if length(line) == 0
+    #         continue
+    #     end
+
+    #     if occursin(r"^     \S", line)
+    #         if geneindex > 0
+    #             parsegene!(record, geneindex, take!(genebuffer))
+    #         end
+    #         geneindex += 1
+    #         println(genebuffer, line)
+    #     elseif occursin(r"^(BASE COUNT|ORIGIN)", line)
+    #         break
+    #     elseif line[1] != ' '
+    #         continue
+    #     else
+    #         println(genebuffer, line)
+    #     end
+    # end
+    
+
     while !eof(stream)
-        line = readline(stream)
+        line = readuntil(stream, UInt8('\n'), keep = true)
         linecount += 1
+        length(line) <= 1 && continue
 
-        if length(line) == 0
-            continue
-        end
-
-        if occursin(r"^     \S", line)
+        if line[6] != UInt8(' ') && all(==(UInt8(' ')), line[1:5])
             if geneindex > 0
                 parsegene!(record, geneindex, take!(genebuffer))
             end
+            write(genebuffer, line)
             geneindex += 1
-            println(genebuffer, line)
-        elseif occursin(r"^(BASE COUNT|ORIGIN)", line)
+        elseif line[1] != UInt8(' ') && ((length(line) >= 10 && line[1:10] == codeunits("BASE COUNT")) || (length(line) >= 6 && line[1:6] == codeunits("ORIGIN")))
             break
-        elseif line[1] != ' '
-            nothing
+        elseif line[1] != UInt8(' ')
+            continue
         else
-            println(genebuffer, line)
+            write(genebuffer, line)
         end
     end
 
     ### FOOTER
     iobuffer = IOBuffer()
     while !eof(stream)
-        line = readline(stream)
-        if line == "//"
+        line = readuntil(stream, UInt8('\n'), keep = true)
+        if line == codeunits("//")
             break
         end
-        print(iobuffer, line)
+        write(iobuffer, line)
     end
-    close(stream)
     record.name = parseheader(record.header)
     record.sequence = LongDNA{4}(filterseq(iobuffer))
     return record
