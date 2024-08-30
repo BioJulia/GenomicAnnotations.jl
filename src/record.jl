@@ -313,12 +313,12 @@ function sequence(chrseq, loc::AbstractLocus; translate = false, preserve_altern
     return seq
 end
 
-_sequence(chrseq, loc::SpanLocus) = chrseq[loc.position]
-_sequence(chrseq, loc::PointLocus{SingleNucleotide}) = chrseq[loc.position:loc.position]
-_sequence(chrseq, loc::PointLocus{BetweenNucleotides}) = chrseq[loc.position:(loc.position + 1)]
+_sequence(chrseq, loc::SpanLocus) = @view(chrseq[loc.position])
+_sequence(chrseq, loc::PointLocus{SingleNucleotide}) = @view(chrseq[loc.position:loc.position])
+_sequence(chrseq, loc::PointLocus{BetweenNucleotides}) = @view(chrseq[loc.position:(loc.position + 1)])
 _sequence(chrseq, loc::Complement) = reverse_complement(_sequence(chrseq, loc.loc))
-_sequence(chrseq, loci::Join) = *([_sequence(chrseq, loc) for loc in loci.loc]...)
-_sequence(chrseq, loci::Order) = *([_sequence(chrseq, loc) for loc in loci.loc]...)
+_sequence(chrseq::T, loci::Join) where T = *(map(seq -> convert(T, seq), [_sequence(chrseq, loc) for loc in loci.loc])...)
+_sequence(chrseq, loci::Order) = [_sequence(chrseq, loc) for loc in loci.loc]
 
 
 Base.length(gene::AbstractGene) = length(locus(gene))
