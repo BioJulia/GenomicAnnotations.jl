@@ -11,7 +11,7 @@ export sequence, iscomplement, iscomplete, addgene!, pushproperty!
 export feature, index, locus, locus!, position
 
 export AbstractLocus
-export SpanLocus, Span, OpenSpan, OpenRightSpan, OpenLeftSpan
+export SpanLocus, ClosedSpan, OpenSpan, OpenRightSpan, OpenLeftSpan
 export PointLocus, SingleNucleotide, BetweenNucleotides
 export Join, Order, Complement
 export Locus

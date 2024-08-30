@@ -87,9 +87,9 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
                 return record
             end
             loc = if strand == "+"
-                SpanLocus(parse(Int, sstart):parse(Int, send), Span)
+                SpanLocus(parse(Int, sstart):parse(Int, send), ClosedSpan)
             else
-                Complement(SpanLocus(parse(Int, sstart):parse(Int, send), Span))
+                Complement(SpanLocus(parse(Int, sstart):parse(Int, send), ClosedSpan))
             end
             addgene!(record, Symbol(feature), loc)
             if source != "." && ismissing(record.genes[end].source)

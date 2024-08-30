@@ -67,7 +67,7 @@ using Test
     end
 
     @testset "Adding/removing genes" begin
-        addgene!(chr, :CDS, Span(300:390), locus_tag = "tag04")
+        addgene!(chr, :CDS, ClosedSpan(300:390), locus_tag = "tag04")
         @test chr.genes[end].locus_tag == "tag04"
         delete!(chr.genes[end])
         @test chr.genes[end].locus_tag == "reg01"
@@ -113,9 +113,12 @@ using Test
         @test sequence(chr.sequence, Locus("3..8"), translate = true) == aa"M"
         @test sequence(chr.sequence, Locus("1^2")) == dna"aa"
         @test sequence(chr.sequence, Locus("1")) == dna"a"
-        @test sequence(chr.sequence, Locus("join(1..3,11..13)")) == sequence(chr.sequence, Locus("order(1..3,11..13)")) == dna"aaaata"
-        @test sequence(chr.sequence, Locus("complement(join(1..3,11..13))")) == sequence(chr.sequence, Locus("complement(order(1..3,11..13))")) == dna"tatttt"
-        @test sequence(chr.sequence, Locus("join(complement(1..3),complement(11..13))")) == sequence(chr.sequence, Locus("order(complement(1..3),complement(11..13))")) == dna"ttttat"
+        @test sequence(chr.sequence, Locus("join(1..3,11..13)")) == dna"aaaata"
+        @test sequence(chr.sequence, Locus("order(1..3,11..13)")) == [dna"aaa", dna"ata"]
+        @test sequence(chr.sequence, Locus("complement(join(1..3,11..13))")) == dna"tatttt"
+        @test sequence(chr.sequence, Locus("complement(order(1..3,11..13))")) == [dna"tat", dna"ttt"]
+        @test sequence(chr.sequence, Locus("join(complement(1..3),complement(11..13))")) == dna"ttttat"
+        @test sequence(chr.sequence, Locus("order(complement(1..3),complement(11..13))")) == [dna"ttt", dna"tat"]
     end
 
     seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"

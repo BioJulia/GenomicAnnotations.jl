@@ -25,7 +25,7 @@ abstract type BetweenNucleotides <: AbstractDescriptor end
 """
 Describes a normal locus, e.g. "1..1000"
 """
-abstract type Span <: AbstractDescriptor end
+abstract type ClosedSpan <: AbstractDescriptor end
 abstract type OpenRightSpan <: AbstractDescriptor end
 abstract type OpenLeftSpan <: AbstractDescriptor end
 abstract type OpenSpan <: AbstractDescriptor end
@@ -59,7 +59,7 @@ end
 
 Locus() = PointLocus(1, SingleNucleotide)
 
-Span(p) = SpanLocus(p, Span)
+ClosedSpan(p) = SpanLocus(p, ClosedSpan)
 OpenRightSpan(p) = SpanLocus(p, OpenRightSpan)
 OpenLeftSpan(p) = SpanLocus(p, OpenLeftSpan)
 OpenSpan(p) = SpanLocus(p, OpenSpan)
@@ -67,13 +67,13 @@ OpenSpan(p) = SpanLocus(p, OpenSpan)
 SingleNucleotide(p) = PointLocus(p, SingleNucleotide)
 BetweenNucleotides(p) = PointLocus(p, BetweenNucleotides)
 
-Base.convert(::Type{Span}, p::UnitRange{Int}) = Span(p)
+Base.convert(::Type{ClosedSpan}, p::UnitRange{Int}) = ClosedSpan(p)
 Base.convert(::Type{Complement{L}}, p::UnitRange{Int}) where L <: AbstractLocus = Complement(L(p))
-function Base.convert(::Type{Span}, p::StepRange{Int, Int})
+function Base.convert(::Type{ClosedSpan}, p::StepRange{Int, Int})
     if p.step == -1
-        return Complement(Span(p.stop:p.start))
+        return Complement(ClosedSpan(p.stop:p.start))
     elseif p.step == 1
-        return Span(p.start:p.stop)
+        return ClosedSpan(p.start:p.stop)
     end
     throw(DomainError(1, "`p` must have a step of 1 or -1"))
 end
@@ -317,6 +317,7 @@ _sequence(chrseq, loc::SpanLocus) = @view(chrseq[loc.position])
 _sequence(chrseq, loc::PointLocus{SingleNucleotide}) = @view(chrseq[loc.position:loc.position])
 _sequence(chrseq, loc::PointLocus{BetweenNucleotides}) = @view(chrseq[loc.position:(loc.position + 1)])
 _sequence(chrseq, loc::Complement) = reverse_complement(_sequence(chrseq, loc.loc))
+_sequence(chrseq, loci::Complement{T}) where T <: Order = map(reverse_complement, reverse(_sequence(chrseq, loci.loc)))
 _sequence(chrseq::T, loci::Join) where T = *(map(seq -> convert(T, seq), [_sequence(chrseq, loc) for loc in loci.loc])...)
 _sequence(chrseq, loci::Order) = [_sequence(chrseq, loc) for loc in loci.loc]
 
@@ -351,7 +352,7 @@ iscomplement(loc::AbstractLocus) = false
 Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
 """
 iscomplete(gene::AbstractGene) = iscomplete(locus(gene)) && !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false))
-iscomplete(locus::SpanLocus{Span}) = true
+iscomplete(locus::SpanLocus{ClosedSpan}) = true
 iscomplete(locus::SpanLocus{OpenSpan}) = false
 iscomplete(locus::SpanLocus{OpenRightSpan}) = false
 iscomplete(locus::SpanLocus{OpenLeftSpan}) = false
@@ -417,7 +418,7 @@ end
 
 Base.show(io::IO, locus::PointLocus{SingleNucleotide}) = print(io, string(locus.position))
 Base.show(io::IO, locus::PointLocus{BetweenNucleotides}) = print(io, string(locus.position, "^", locus.position + 1))
-Base.show(io::IO, locus::SpanLocus{Span}) = print(io, string(locus.position.start, "..", locus.position.stop))
+Base.show(io::IO, locus::SpanLocus{ClosedSpan}) = print(io, string(locus.position.start, "..", locus.position.stop))
 Base.show(io::IO, locus::SpanLocus{OpenSpan}) = print(io, string("<", locus.position.start, "..", ">", locus.position.stop))
 Base.show(io::IO, locus::SpanLocus{OpenLeftSpan}) = print(io, string("<", locus.position.start, "..", locus.position.stop))
 Base.show(io::IO, locus::SpanLocus{OpenRightSpan}) = print(io, string(locus.position.start, "..", ">", locus.position.stop))
@@ -440,7 +441,7 @@ end
 Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (feature(g1) == "gene" && feature(g2) != "gene")) || (locus(g1) < locus(g2))
 
 
-Base.:(==)(loc1::SpanLocus{Span}, loc2::SpanLocus{Span}) = loc1.position == loc2.position
+Base.:(==)(loc1::SpanLocus{ClosedSpan}, loc2::SpanLocus{ClosedSpan}) = loc1.position == loc2.position
 Base.:(==)(loc1::PointLocus{SingleNucleotide}, loc2::PointLocus{SingleNucleotide}) = loc1.position == loc2.position
 Base.:(==)(loc1::Join{T}, loc2::Join{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
 Base.:(==)(loc1::Order{T}, loc2::Order{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
@@ -518,7 +519,7 @@ function Locus(s::T) where T <: AbstractString
     if !isnothing(m)
         p = parse(Int, m[2]):parse(Int, m[4])
         type = if all(isempty, m.captures[[1,3]])
-            Span
+            ClosedSpan
         elseif all(!isempty, m.captures[[1,3]])
             OpenSpan
         elseif !isempty(m.captures[1])
