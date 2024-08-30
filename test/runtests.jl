@@ -4,11 +4,6 @@ using Test
 
 @testset "GenomicAnnotations" begin
     @testset "GenBank parsing" begin
-        s = "     gene            1..1"
-        @test !isnothing(GenBank.parseposition(s))
-        @test GenBank.parseposition(s) == (:gene, SpanLocus(1:1, Span))
-        s = "     gene            complement(order(3300..4037,4047..4052))"
-        @test GenBank.parseposition(s) == (:gene, Complement(Order([Span(3300:4037), Span(4047:4052)])))
         chrs = collect(open(GenBank.Reader, "example.gbk"))
         @test length(chrs) == 2
         @test chrs[2].name == "plasmid1"

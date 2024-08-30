@@ -126,17 +126,17 @@ addgene!(chr, "CDS", 1:756;
     product = "Chromosomal replication initiator protein dnaA")
 ```
 """
-function addgene!(chr::Record{Gene}, feature, loc::AbstractLocus; kw...)
+function addgene!(chr::Record{Gene}, feature, loc::AbstractLocus, geneindex; kw...)
     push!(chr.genedata, fill(missing, size(chr.genedata, 2)))
-    index = UInt32(length(chr.genes) + 1)
-    gene = Gene(chr, index, loc, feature)
+    gene = Gene(chr, geneindex, loc, feature)
     for (k, v) in kw
-        Base.setproperty!(gene, k, v)
+        pushproperty!(chr, geneindex, k, v)
     end
     push!(chr.genes, gene)
     return gene
 end
-addgene!(chr::Record{Gene}, feature, loc; kw...) = addgene!(chr, feature, Locus(loc); kw...)
+addgene!(chr::Record{Gene}, feature, loc::AbstractString, geneindex; kw...) = addgene!(chr, feature, Locus(loc), geneindex; kw...)
+addgene!(chr::Record{Gene}, feature, loc; kw...) = addgene!(chr, feature, loc, UInt32(length(chr.genes) + 1); kw...)
 
 
 """
@@ -224,48 +224,51 @@ julia> eltype(chr.genedata[!, :EC_number])
 Union{Missing, Array{String,1}}
 ```
 """
-function pushproperty!(gene::AbstractGene, qualifier::Symbol, value::T; forceany = true) where T
-    if hasproperty(parent(gene).genedata, qualifier)
-        C = eltype(parent(gene).genedata[!, qualifier])
+function pushproperty!(chr::Record, ind::Integer, qualifier::Symbol, value::T; forceany = true) where T
+    gd = chr.genedata
+    if hasproperty(gd, qualifier)
+        C = eltype(gd[!, qualifier])
         if T <: C
-            if ismissing(parent(gene).genedata[index(gene), qualifier])
-                parent(gene).genedata[index(gene), qualifier] = value
+            if ismissing(gd[ind, qualifier])
+                gd[ind, qualifier] = value
             else
-                parent(gene).genedata[!, qualifier] = vectorise(parent(gene).genedata[!, qualifier])
-                push!(parent(gene).genedata[index(gene), qualifier], value)
+                gd[!, qualifier] = vectorise(gd[!, qualifier])
+                push!(gd[ind, qualifier], value)
             end
         elseif Vector{T} <: C
-            if ismissing(parent(gene).genedata[index(gene), qualifier])
-                parent(gene).genedata[index(gene), qualifier] = [value]
+            if ismissing(gd[ind, qualifier])
+                gd[ind, qualifier] = [value]
             else
-                push!(parent(gene).genedata[index(gene), qualifier], value)
+                push!(gd[ind, qualifier], value)
             end
         elseif forceany && !(C <: AbstractVector)
-            if ismissing(parent(gene).genedata[index(gene), qualifier])
-                parent(gene).genedata[!, qualifier] = convert(Vector{Any}, parent(gene).genedata[!, qualifier])
-                parent(gene).genedata[index(gene), qualifier] = value
+            if ismissing(gd[ind, qualifier])
+                gd[!, qualifier] = convert(Vector{Any}, gd[!, qualifier])
+                gd[ind, qualifier] = value
             else
-                parent(gene).genedata[!, qualifier] = vectorise(convert(Vector{Any}, parent(gene).genedata[! ,qualifier]))
-                push!(parent(gene).genedata[index(gene), qualifier], value)
+                gd[!, qualifier] = vectorise(convert(Vector{Any}, gd[!, qualifier]))
+                push!(gd[ind, qualifier], value)
             end
         elseif forceany && C <: AbstractVector
-            if ismissing(parent(gene).genedata[index(gene), qualifier])
-                parent(gene).genedata[!, qualifier] = convert(Vector{Any}, parent(gene).genedata[!, qualifier])
-                parent(gene).genedata[index(gene), qualifier] = [value]
+            if ismissing(gd[ind, qualifier])
+                gd[!, qualifier] = convert(Vector{Any}, gd[!, qualifier])
+                gd[ind, qualifier] = [value]
             else
                 @error "This shouldn't happen"
             end
         else
-            @error "Tried to add a '$T' to '$qualifier::$(typeof(parent(gene).genedata[!, qualifier]))'"
+            @error "Tried to add a '$T' to '$qualifier::$(typeof(gd[!, qualifier]))'"
         end
     else
-        s = size(parent(gene).genedata, 1)
-        parent(gene).genedata[!, qualifier] = Vector{Union{Missing, T}}(missing, s)
-        parent(gene).genedata[index(gene), qualifier] = value
+        s = size(gd, 1)
+        isempty(names(gd)) ?
+            gd[!, qualifier] = Union{Missing, typeof(value)}[value] :
+            gd[!, qualifier] = missings(T, s)
+        gd[ind, qualifier] = value
     end
     return value
 end
-
+pushproperty!(gene::AbstractGene, qualifier::Symbol, value::T; forceany = true) where T = pushproperty!(parent(gene), index(gene), qualifier, value; forceany = forceany)
 
 """
     get(g::AbstractGene, key, default)
