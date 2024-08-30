@@ -291,24 +291,14 @@ end
 Return genomic sequence for `gene`. If `translate` is `true`, the sequence will be translated to a `LongAA`, excluding the stop, otherwise it will be returned as a `LongDNA{4}` (including the stop codon). If `preserve_alternate_start` is set to false, alternate start codons will be assumed to code for methionine.
 ```
 """
-function sequence(gene::AbstractGene; translate = false, preserve_alternate_start = false)
-    seq = _sequence(parent(gene).sequence, locus(gene))
-    if translate
-        if preserve_alternate_start
-            return BioSequences.translate(seq)[1:end-1]
-        end
-        return aa"M" * BioSequences.translate(seq)[2:end-1]
-    end
-    return seq
-end
-
+sequence(gene::AbstractGene; kw...) = sequence(parent(gene).sequence, locus(gene); kw...)
 function sequence(chrseq, loc::AbstractLocus; translate = false, preserve_alternate_start = false)
     seq = _sequence(chrseq, loc)
     if translate
         if preserve_alternate_start
-            return BioSequences.translate(seq)[1:end-1]
+            return BioSequences.translate(seq[1:end-3])
         end
-        return aa"M" * BioSequences.translate(seq)[2:end-1]
+        return aa"M" * BioSequences.translate(seq[4:end-3])
     end
     return seq
 end
