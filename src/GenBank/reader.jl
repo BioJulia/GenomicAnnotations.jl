@@ -143,9 +143,11 @@ function parsefeature!(record, geneindex, bytes)
             end
             if haskey(qualifiers, qualifier)
                 if qualifiers[qualifier] isa AbstractVector
-                    qualifiers[qualifier][end] = oneline(qualifiers[qualifier][end] * "\n" * content)
+                    T = eltype(qualifiers[qualifier])
+                    qualifiers[qualifier][end] = T(oneline(String(qualifiers[qualifier][end]) * "\n" * content))
                 else
-                    qualifiers[qualifier] = oneline(qualifiers[qualifier] * "\n" * content)
+                    T = typeof(qualifiers[qualifier])
+                    qualifiers[qualifier] = T(oneline(String(qualifiers[qualifier]) * "\n" * content))
                 end
             end
         end
