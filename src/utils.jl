@@ -91,7 +91,7 @@ function relative_position(chrseq, loc::AbstractLocus, point = :start)
     elseif point == :middle
         p1 = loc.start / length(chrseq)
         p2 = loc.stop / length(chrseq)
-        return atan((sinpi(2p1) + sinpi(2p2)) / 2, (cospi(2p1) + cospi(2p2)) / 2) / 2π
+        return mod1(atan((sinpi(2p1) + sinpi(2p2)) / 2, (cospi(2p1) + cospi(2p2)) / 2) / 2π, 1)
     else
         error("`point` must be one of `:start`, `:middle`, or `:stop`")
     end
