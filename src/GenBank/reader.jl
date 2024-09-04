@@ -143,7 +143,7 @@ function parsefeature!(record, geneindex, bytes)
             end
             if haskey(qualifiers, qualifier)
                 if qualifiers[qualifier] isa AbstractVector
-                    T = typeof(qualifiers[qualifier])
+                    T = typeof(first(qualifiers[qualifier]))
                     qualifiers[qualifier][end] = T(oneline(String(qualifiers[qualifier][end]) * "\n" * content))
                 else
                     T = typeof(qualifiers[qualifier])
