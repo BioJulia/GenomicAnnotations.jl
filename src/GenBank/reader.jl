@@ -89,7 +89,7 @@ function parsefeature!(record, geneindex, bytes)
     fp = 4 + findfirst(==(UInt8(' ')), bytes[6:newlines[1]])
     feature = Symbol(bytes[6:fp])
     loc = Locus(String(bytes[22:(newlines[1]-1)]))
-    qualifiers = Dict()
+    qualifiers = Dict{Symbol, Any}()
     qualifier = :locus_tag
     addgene!(record, feature, loc, geneindex)
     for p in [(start = x[1], stop = x[2]) for x in zip(newlines[1:end-1], newlines[2:end])]
@@ -143,11 +143,9 @@ function parsefeature!(record, geneindex, bytes)
             end
             if haskey(qualifiers, qualifier)
                 if qualifiers[qualifier] isa AbstractVector
-                    T = typeof(first(qualifiers[qualifier]))
-                    qualifiers[qualifier][end] = T(oneline(String(qualifiers[qualifier][end]) * "\n" * content))
+                    qualifiers[qualifier][end] = oneline(String(qualifiers[qualifier][end]) * "\n" * content)
                 else
-                    T = typeof(qualifiers[qualifier])
-                    qualifiers[qualifier] = T(oneline(String(qualifiers[qualifier]) * "\n" * content))
+                    qualifiers[qualifier] = oneline(String(qualifiers[qualifier]) * "\n" * content)
                 end
             end
         end
