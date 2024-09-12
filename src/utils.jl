@@ -82,11 +82,11 @@ end
 
 Returns the relative position of `gene` on `parent(gene)`, on the interval (0,1]. The keyword `point` determines which of the `:start`, `:middle`, or `:stop` should be counted.
 """
-relative_position(gene::AbstractGene, point = :start) = relative_position(parent(gene).sequence, locus(gene), point)
-function relative_position(chrseq, loc::AbstractLocus, point = :start)
-    if point == :start
+relative_position(gene::AbstractGene, point = :start) = relative_position(parent(gene).sequence, locus(gene), point; iscomplement = iscomplement(gene))
+function relative_position(chrseq, loc::AbstractLocus, point = :start; iscomplement = false)
+    if (point == :start && !iscomplement) || (point == :stop && iscomplement)
         return loc.start / length(chrseq)
-    elseif point == :stop
+    elseif (point == :stop && !iscomplement) || (point == :start && iscomplement)
         return loc.stop / length(chrseq)
     elseif point == :middle
         p1 = loc.start / length(chrseq)
