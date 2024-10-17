@@ -19,8 +19,12 @@ function Base.getproperty(gv::GeneDataView{G}, name::Symbol) where {G <: Abstrac
 end
 
 
-function Base.getproperty(genes::AbstractArray{G, 1}, name::Symbol) where {G <: AbstractGene}
-    GeneDataView(parent.(genes), index.(genes), name)
+function Base.getproperty(genes::G, name::Symbol) where {G <: AbstractVector{Gene}}
+    if name in fieldnames(G)
+        getfield(genes, name)
+    else
+        GeneDataView(parent.(genes), index.(genes), name)
+    end
 end
 
 
