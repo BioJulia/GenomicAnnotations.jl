@@ -12,7 +12,7 @@ pkg> add GenomicAnnotations
 
 
 ## Usage
-GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Record`s. `input` can be an `IOStream` or a file path. GZipped data  is unzipped automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
+GenBank and GFF3 files are read with `readgbk(input)` and `readgff(input)`, which return vectors of `Record`s. `input` can be an `IOStream` or a file path. GZipped data is unzipped automatically if a filename ending in ".gz" is passed as `input`. If we're only interested in the first chromosome in `example.gbk` we only need to store the first element.
 ```julia
 chr = readgbk("test/example.gbk")[1]
 ```
@@ -26,14 +26,21 @@ end
 chr.genes[2].locus_tag = "test123"
 ```
 
-The `Locus` of a `Gene` retrieved with `locus(gene)`. The `Locus` itself is immutable, but can be updated with `locus!(gene, newlocus)`. For simplicity, `position(gene)` is shorthand for `locus(gene).position`.
+The locus of a `Gene` can be retrieved with `locus(gene)`, and updated with `locus!(gene, newlocus)`. The easiest way to create a locus is to use the constructor `Locus(s)`, which takes an `AbstractString` `s` and parses it as a GenBank locus string as defined here: https://www.insdc.org/submitting-standards/feature-table/#3.4. Note that remote entry descriptors have not been implemented.
 ```julia
-# Create a new Locus, copying all fields of the old one but shifting the position by 1
-oldloc = locus(gene)
-locus!(gene, Locus(oldloc.position .+ 1, oldloc.strand, oldloc.complete_left, oldloc.complete_right, oldloc.order, oldloc.join))
+# The following are all equivalent
+locus!(gene, "complement(join(1..100,200..>300))")
+locus!(gene, Locus("complement(join(1..100,200..>300))"))
+locus!(gene, Complement(Join(ClosedSpan(1:100), OpenRightSpan(200:300))))
+```
 
-# Access the genomic positions of all genes
-position.(chr.genes)
+`position(gene)` can be used as shorthand for locus(gene).position to retrieve the chromosomal positions included in the locus, excluding all metadata such as strandedness. The return type depends on the locus type, but is quaranteed to iterate over the individual positions.
+```julia
+for i in position(gene)
+    print(parent(gene).sequence[i])
+end
+# is equivalent to
+print(sequence(gene))
 ```
 
 Accessing properties that haven't been stored will return missing. For this reason, it often makes more sense to use `get()` than to access the property directly.
@@ -72,12 +79,12 @@ The macro `@genes` can be used to filter through the annotations. The macro take
 @genes(chr, CDS, ismissing(:gene)).gene .= "unknown"
 ```
 
-Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes to a file:
+Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all complete protein-coding genes to a file:
 ```julia
 using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
-    for gene in @genes(chr, CDS)
+    for gene in @genes(chr, CDS, iscomplete(gene))
         aaseq = GenomicAnnotations.sequence(gene; translate = true)
         write(w, FASTA.Record(gene.locus_tag, get(:product, ""), aaseq))
     end
