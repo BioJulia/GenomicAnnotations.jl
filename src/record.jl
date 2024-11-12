@@ -503,7 +503,7 @@ function Locus(s::T) where T <: AbstractString
         return PointLocus(parse(Int, m[1]), BetweenNucleotides)
     end
     ### Span
-    m = match(r"^(<?)(\d+)..(>?)(\d+)$", s)
+    m = match(r"^(<?)(\d+)\.\.(>?)(\d+)$", s)
     if !isnothing(m)
         p = parse(Int, m[2]):parse(Int, m[4])
         type = if all(isempty, m.captures[[1,3]])
