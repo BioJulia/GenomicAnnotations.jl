@@ -55,10 +55,10 @@ function gffstring(gene::Gene)
             end
         end
     end
-    if locus(gene).position isa Vector
+    if locus(gene) isa Union{Join, Order}
         s = String(take!(buf))
         res = IOBuffer()
-        for pos in locus(gene).position
+        for pos in locus(gene).loc
             println(res, join([parent(gene).name,
                 get(gene, :source, "."),
                 feature(gene),
