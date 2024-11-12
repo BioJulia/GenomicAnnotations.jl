@@ -34,19 +34,31 @@ end
 chr.genes[2].locus_tag = "test123"
 ```
 
-The `Locus` of a `Gene` retrieved with `locus(gene)`. The `Locus` itself is immutable, but can be updated with `locus!(gene, newlocus)`. For simplicity, `position(gene)` is shorthand for `locus(gene).position`.
+The locus of a `Gene` is represented by an `AbstractLocus` (see [Loci](@ref)), which can be retrieved with `locus(gene)`. The locus of a gene can be updated with `locus!(gene, newlocus)`. The easiest way to create a locus is to use the constructor `Locus(s)`, which takes an `AbstractString` `s` and parses it as a GenBank locus string as defined here: https://www.insdc.org/submitting-standards/feature-table/#3.4. Note that remote entry descriptors have not been implemented.
 ```julia
-# Create a new Locus, copying all fields of the old one but shifting the position by 1
-oldloc = locus(gene)
-locus!(gene, Locus(oldloc.position .+ 1, oldloc.strand, oldloc.complete_left, oldloc.complete_right, oldloc.order, oldloc.join))
+# Creating a new locus
+newlocus = Locus("complement(join(1..100,200..>300))")
+
+# Assigning a new locus to a gene
+locus!(gene, newlocus)
+# which is equivalent to
+locus!(gene, "complement(join(1..100,200..>300))")
 
 # Access the genomic positions of all genes
 position.(chr.genes)
 ```
 
+For simplicity, `position(gene)` is shorthand for `locus(gene).position`. `locus(gene).position` gives an iteratable object that generates each individual position in the defined order. Thus:
+```julia
+loc = Locus("join(4..6,1..3)")
+collect(loc.position) # Returns [4,5,6,1,2,3]
+```
+
 The macro `@genes` can be used to filter through the annotations (see [`@genes`](@ref)). The keyword `gene` is used to refer to the individual `Gene`s. `@genes` can also be used to modify annotations.
 ```julia
 @genes(chr, length(gene) > 300) # Returns all features longer than 300 nt
+
+@genes(chr, CDS, ismissing(:product)) .= "hypothetical product"
 ```
 
 Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes in `chr` to a file:

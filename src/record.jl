@@ -337,9 +337,10 @@ iscomplement(loc::AbstractLocus) = false
 
 
 """
-    iscomplete(gene)
+    iscomplete(gene::AbstractGene)
+    iscomplete(loc::AbstractLocus)
 
-Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial.
+Return `true` if `gene` is a complete gene, i.e. not a pseudo gene or partial. Compound loci (i.e. those with join/order) are considered incomplete if any element is incomplete.
 """
 iscomplete(gene::AbstractGene) = iscomplete(locus(gene)) && !any(get(gene, :pseudo, false)) && !any(get(gene, :partial, false))
 iscomplete(locus::SpanLocus{ClosedSpan}) = true

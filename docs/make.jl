@@ -5,6 +5,7 @@ makedocs(sitename = "GenomicAnnotations.jl", authors = "Karl Dyrhage",
         "index.md",
         "I/O" => "io.md",
         "Accessing and modifying annotations" => "accessing.md",
+        "Representing genomic loci" => "loci.md",
         "Filtering: the @genes macro" => "genes.md",
         "Examples" => "examples.md"
     ],
