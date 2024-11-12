@@ -390,23 +390,16 @@ function Base.show(io::IO, gene::AbstractGene)
     println(io, String(take!(buf)))
 end
 
-
-Base.show(io::IO, mime::MIME"text/plain", genes::Array{G, 1}) where {G <: AbstractGene} = Base.show(io, genes)
+Base.show(io::IO, mime::MIME"text/plain", genes::Array{G, 1}) where {G <: AbstractGene} = Base.show(io, "Vector{$G} containing $(length(genes)) annotations")
 function Base.show(io::IO, genes::Array{G, 1}) where {G <: AbstractGene}
     for gene in genes
         show(io, gene)
     end
 end
 
-
 function Base.show(io::IO, chr::Record)
     s = "Chromosome '$(chr.name)' ($(length(chr.sequence)) bp) with $(length(chr.genes)) annotations\n"
     print(io, s)
-end
-
-
-function Base.show(io::IO, genes::Vector{AbstractGene})
-    print(join(genes, "\n"))
 end
 
 
