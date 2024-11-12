@@ -10,9 +10,9 @@ Since v0.4.0, genomic loci are represented using instances of `AbstractLocus`. S
 | 1   | `PointLocus{SingleNucleotide}(1)` | Refers to a single nucleotide. |
 | 1^2 | `PointLocus{BetweenNucleotides}(1)` | Refers to the internucleotide space immediately after position 1. |
 | 10..20 | `SpanLocus{ClosedSpan}(10:20)` | Denotes a closed sequence span. |
-| 10..>20 | `SpanLocus{OpenRightSpan}(10:20) | Denotes a sequence span where the right side is open, i.e. the end-point is undefined but earliest at position 20. |
-| <10..20 | `SpanLocus{OpenLeftSpan}(10:20) | The left end-point is undefined. |
-| <10..>20 | `SpanLocus{OpenSpan}(10:20) | Both end-points are undefined. |
+| 10..>20 | `SpanLocus{OpenRightSpan}(10:20)` | Denotes a sequence span where the right side is open, i.e. the end-point is undefined but earliest at position 20. |
+| <10..20 | `SpanLocus{OpenLeftSpan}(10:20)` | The left end-point is undefined. |
+| <10..>20 | `SpanLocus{OpenSpan}(10:20)` | Both end-points are undefined. |
 
 These can be wrapped in `Complement` for loci on the complement strand, e.g. `Complement(SpanLocus{ClosedSpan}(10:20))` representing "complement(10..20)". Simplified constructors are provided for all `AbstractDescriptor`s, e.g. `ClosedSpan(1:10) == SpanLocus(1:10, ClosedSpan)`.
 
