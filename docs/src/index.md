@@ -43,9 +43,6 @@ newlocus = Locus("complement(join(1..100,200..>300))")
 locus!(gene, newlocus)
 # which is equivalent to
 locus!(gene, "complement(join(1..100,200..>300))")
-
-# Access the genomic positions of all genes
-position.(chr.genes)
 ```
 
 For simplicity, `position(gene)` is shorthand for `locus(gene).position`. `locus(gene).position` gives an iteratable object that generates each individual position in the defined order. Thus:
@@ -61,12 +58,12 @@ The macro `@genes` can be used to filter through the annotations (see [`@genes`]
 @genes(chr, CDS, ismissing(:product)) .= "hypothetical product"
 ```
 
-Gene sequences can be accessed with `sequence(gene)`. For example, the following code will write the translated sequences of all protein-coding genes in `chr` to a file:
+Gene sequences can be accessed with `sequence(gene)`, which returns the nucleotide sequence. If the `translate` keyword is set to `true`, the translated amino acid sequence is returned instead. By default the first codon is translated to methionine also for alternate start codons, but this behaviour can be toggled by setting `preserve_alternate_start` to `false`. No checks are made to ensure that the gene points to a valid open reading frame, so this should be done by the user. The following example will write the translated sequences of all protein-coding genes in `chr` to a file:
 ```julia
 using BioSequences
 using FASTX
 open(FASTA.Writer, "proteins.fasta") do w
-    for gene in @genes(chr, CDS)
+    for gene in @genes(chr, CDS, iscomplete(gene))
         aaseq = GenomicAnnotations.sequence(gene; translate = true)
         write(w, FASTA.Record(gene.locus_tag, get(:product, ""), aaseq))
     end
