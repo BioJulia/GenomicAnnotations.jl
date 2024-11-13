@@ -8,7 +8,7 @@ using CodecZlib
 
 import ..GenomicAnnotations: Record, Gene, AbstractGene, GeneDataView, Locus, Join, Order
 import ..GenomicAnnotations: SpanLocus, ClosedSpan, Complement
-import ..GenomicAnnotations: sequence, iscomplement, iscomplete, addgene!, pushproperty!, feature, index, locus, oneline
+import ..GenomicAnnotations: sequence, iscomplement, iscomplete, addgene!, pushproperty!, feature, index, locus, oneline, ismultilocus
 export sequence, iscomplement, iscomplete, feature, index, locus
 
 include("reader.jl")

@@ -55,10 +55,10 @@ function gffstring(gene::Gene)
             end
         end
     end
-    if locus(gene) isa Union{Join, Order}
+    if ismultilocus(gene)
         s = String(take!(buf))
         res = IOBuffer()
-        for pos in locus(gene).loc
+        for pos in (locus(gene) isa Complement ? locus(gene).loc.loc : locus(gene).loc)
             println(res, join([parent(gene).name,
                 get(gene, :source, "."),
                 feature(gene),

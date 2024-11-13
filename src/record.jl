@@ -352,6 +352,16 @@ iscomplete(locus::Complement) = iscomplete(locus.loc)
 iscomplete(loci::Join) = all(iscomplete, loci.loc)
 iscomplete(loci::Order) = all(iscomplete, loci.loc)
 
+"""
+    ismultilocus(gene::AbstractGene)
+    ismultilocus(loc::AbstractLocus)
+
+Return `true` if `loc` is a `Join`, `Order`, or either wrapping in `Complement`.
+"""
+ismultilocus(gene::AbstractGene) = ismultilocus(locus(gene))
+ismultilocus(locus::Union{SpanLocus, PointLocus}) = false
+ismultilocus(locus::Union{Join, Order}) = true
+ismultilocus(locus::Complement{T}) where T <: AbstractLocus = ismultilocus(locus.loc)
 
 function appendstring(field, v::Bool)
     return "\n" * join(fill(' ', 21)) * "/$field"
