@@ -94,7 +94,7 @@ printgff(io::IO, chr::Record) = printgff(io, [chr])
 function printgff(io::IO, chrs::AbstractVector{Record{G}}) where G <: AbstractGene
     iobuffer = IOBuffer()
     ### Header
-    if chrs[1].header[1:15] == "#gff-version 3\n"
+    if occursin(r"^##gff-version 3", chrs[1].header)
         print(iobuffer, chrs[1].header)
     else
         println(iobuffer, "##gff-version 3")
