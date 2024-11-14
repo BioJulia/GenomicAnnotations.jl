@@ -63,14 +63,29 @@ using Test
     end
 
     @testset "Iteration" begin
-        @test length([g.locus_tag for g in chr.genes]) == 7
+        @test length([g.locus_tag for g in chr.genes]) == 8
+        @test [loc for loc in Locus("complement(join(1..3,7..9))")] ==
+              [loc for loc in Locus("complement(order(1..3,7..9))")] == [Complement(ClosedSpan(7:9)), Complement(ClosedSpan(1:3))]
+        @test [loc for loc in Locus("complement(1..3)")] == [Complement(ClosedSpan(1:3))]
+        @test [loc for loc in Locus("join(complement(1..3),complement(7..9))")] ==
+              [loc for loc in Locus("order(complement(1..3),complement(7..9))")] == [Complement(ClosedSpan(1:3)), Complement(ClosedSpan(7:9))]
+        @test [loc for loc in Locus("1^2")] == [Locus("1^2")]
+        @test [loc for loc in Locus("1..3")] == [Locus("1..3")]
+        @test [loc for loc in Locus("1")] == [Locus("1")]
+    end
+
+    @testset "eachposition" begin
+        @test collect(eachposition(Locus("1..3"))) == [1, 2, 3]
+        @test collect(eachposition(Locus("join(1..3,7..9)"))) == [1, 2, 3, 7, 8, 9]
+        @test collect(eachposition(Locus("complement(join(1..3,7..9))"))) == reverse([1, 2, 3, 7, 8, 9])
+        @test collect(eachposition(Locus("order(complement(1..3),7..9)"))) == [3, 2, 1, 7, 8, 9]
     end
 
     @testset "Adding/removing genes" begin
         addgene!(chr, :CDS, ClosedSpan(300:390), locus_tag = "tag04")
         @test chr.genes[end].locus_tag == "tag04"
         delete!(chr.genes[end])
-        @test chr.genes[end].locus_tag == "reg01"
+        @test chr.genes[end-1].locus_tag == "reg01"
     end
 
     @testset "@genes" begin

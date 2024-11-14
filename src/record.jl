@@ -67,6 +67,8 @@ OpenSpan(p) = SpanLocus(p, OpenSpan)
 SingleNucleotide(p) = PointLocus(p, SingleNucleotide)
 BetweenNucleotides(p) = PointLocus(p, BetweenNucleotides)
 
+Complement(loc::Complement) = loc.loc
+
 Base.convert(::Type{ClosedSpan}, p::UnitRange{Int}) = ClosedSpan(p)
 Base.convert(::Type{Complement{L}}, p::UnitRange{Int}) where L <: AbstractLocus = Complement(L(p))
 function Base.convert(::Type{ClosedSpan}, p::StepRange{Int, Int})
@@ -441,24 +443,50 @@ Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (
 
 Base.:(==)(loc1::SpanLocus{ClosedSpan}, loc2::SpanLocus{ClosedSpan}) = loc1.position == loc2.position
 Base.:(==)(loc1::PointLocus{SingleNucleotide}, loc2::PointLocus{SingleNucleotide}) = loc1.position == loc2.position
+Base.:(==)(loc1::PointLocus{BetweenNucleotides}, loc2::PointLocus{BetweenNucleotides}) = loc1.position == loc2.position
 Base.:(==)(loc1::Join{T}, loc2::Join{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
 Base.:(==)(loc1::Order{T}, loc2::Order{T}) where {T <: AbstractLocus} = (length(loc1.loc) == length(loc2.loc)) && all(pair -> pair[1] == pair[2], zip(loc1.loc, loc2.loc))
 Base.:(==)(loc1::Complement{T}, loc2::Complement{T}) where {T <: AbstractLocus} = loc1.loc == loc2.loc
 Base.:(==)(loc1::AbstractLocus, loc2::AbstractLocus) = false
 
-Base.in(loc::PointLocus{SingleNucleotide}, r::UnitRange) = loc.position in r
-Base.in(loc::PointLocus{BetweenNucleotides}, r::UnitRange) = loc.position in r[1:end-1]
-Base.in(loc::SpanLocus, r::UnitRange) = loc.position in r
-Base.in(loc::Join, r::UnitRange) = all(in.(loc.loc, r))
-Base.in(loc::Order, r::UnitRange) = all(in.(loc.loc, r))
-Base.in(loc::Complement, r::UnitRange) = all(in.(loc.loc, r))
+# Base.in(loc::PointLocus{SingleNucleotide}, r::UnitRange) = loc.position in r
+# Base.in(loc::PointLocus{BetweenNucleotides}, r::UnitRange) = loc.position in r[1:end-1]
+# Base.in(loc::SpanLocus, r::UnitRange) = loc.position in r
+# Base.in(loc::Join, r::UnitRange) = all(in.(loc.loc, Ref(r)))
+# Base.in(loc::Order, r::UnitRange) = all(in.(loc.loc, Ref(r)))
+# Base.in(loc::Complement, r::UnitRange) = all(in.(loc.loc, Ref(r)))
 
 # Base.intersect(loc1::PointLocus{SingleNucleotide}, loc2::A)
 # Base.intersect(loc1::Locus, loc2::Locus) = intersect(loc1.position, loc2.position)
 
-Base.iterate(loc::PointLocus{SingleNucleotide}) = iterate(loc.position)
-Base.iterate(loc::SpanLocus{T}) where T = iterate(loc.position)
-Base.iterate(loc::AbstractLocus) = iterate(union(x.loc for x in loc.loc))
+# Base.iterate(loc::PointLocus{SingleNucleotide}) = iterate(loc.position)
+# Base.iterate(loc::SpanLocus{T}) where T = iterate(loc.position)
+# Base.iterate(loc::AbstractLocus) = iterate(union(x.loc for x in loc.loc))
+
+Base.iterate(loc::Union{PointLocus, SpanLocus}) = (loc, nothing)
+Base.iterate(loc::Union{PointLocus, SpanLocus}, ::Any) = nothing
+Base.iterate(loc::Union{Join, Order}, i = 1) = i > length(loc.loc) ? nothing : (loc.loc[i], i+1)
+Base.iterate(loc::Complement{T}) where {T <: Union{PointLocus, SpanLocus}} = (loc, 1)
+Base.iterate(loc::Complement{T}, ::Any) where {T <: Union{PointLocus, SpanLocus}} = nothing
+Base.iterate(loc::Complement{T}, i = 1) where {T <: Union{Join, Order}} = i > length(loc.loc.loc) ? nothing : (Complement(loc.loc.loc[end-i+1]), i+1)
+
+Base.IteratorSize(loc::AbstractLocus) = Base.SizeUnknown()
+
+"""
+    eachposition(loc::AbstractLocus)
+
+Returns an object that iterates over each position in the locus in the specified order. Returns `nothing` for `PointLocus{BetweenNucleotides}`.
+
+```julia
+julia> eachposition(Locus("join(1..3,complement(7..9))"))
+[1,2,3,9,8,7]
+"""
+eachposition(loc::PointLocus{BetweenNucleotides}) = nothing
+eachposition(loc::PointLocus{SingleNucleotide}) = loc.position
+eachposition(loc::SpanLocus) = loc.position
+eachposition(loc::Union{Join, Order}) = Iterators.flatten(map(eachposition, loc.loc))
+eachposition(loc::Complement{T}) where {T <: Union{PointLocus, SpanLocus}} = Iterators.reverse(loc.position)
+eachposition(loc::Complement) = Iterators.reverse(eachposition(loc.loc))
 
 index(g::Gene) = getfield(g, :index)
 locus(g::Gene) = getfield(g, :locus)

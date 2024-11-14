@@ -58,14 +58,14 @@ function gffstring(gene::Gene)
     if ismultilocus(gene)
         s = String(take!(buf))
         res = IOBuffer()
-        for pos in (locus(gene) isa Complement ? locus(gene).loc.loc : locus(gene).loc)
+        for loc in locus(gene)
             println(res, join([parent(gene).name,
                 get(gene, :source, "."),
                 feature(gene),
-                pos.start,
-                pos.stop,
+                loc.start,
+                loc.stop,
                 get(gene, :score, "."),
-                locus(gene).strand,
+                loc.strand,
                 get(gene, :phase, "."),
                 s], '\t'))
         end

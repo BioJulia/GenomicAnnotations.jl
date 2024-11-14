@@ -82,6 +82,8 @@ FEATURES             Location/Qualifiers
                      LISGDDKILNGVYSQYEEGESIFGSLF"
      regulatory      complement(4047..4052)
                      /locus_tag="reg01"
+     gene            join(complement(4053..4060),4070..4080)
+                     /locus_tag="joined_gene"
 ORIGIN
         1 aaatgtccat atacaacggt atctccacct caggtttaga tctcaacaac ggaaccattg
        61 ccgacatgag acagttaggt atcgtcgaga gttacaagct aaaacgagca gtagtcagct
