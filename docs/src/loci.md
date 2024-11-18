@@ -21,3 +21,23 @@ Compound loci are represented with `Join` and `Order`. Both types have a single 
 ```julia
 Locus("complement(join(10..20,30..>40))") isa Complement{Join{SpanLocus{ClosedSpan}, SpanLocus{OpenRightSpan}}}
 ```
+
+## Iteration
+`AbstractLocus` instances are themselves iterable, yielding each compound locus in sequence. If the locus is wrapped in `Complement`, the compound loci are returned in reverse order, and individually wrapped in `Complement`.
+
+```julia
+julia> for loc in Locus("complement(join(1..3,7..9))")
+           println(loc)
+       end
+complement(7..9)
+complement(1..3)
+```
+
+The `eachposition(locus)` function is provided for iterating over the individual genomic positions in the locus. Note that this ignores any metadata such as strandedness.
+
+```julia
+julia> for p in eachposition(Locus("complement(join(1..3,7..9))"))
+           print(p)
+       end
+987321
+```
