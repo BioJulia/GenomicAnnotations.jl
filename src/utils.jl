@@ -61,10 +61,20 @@ end
 """
     readgbk(input)
 
-Parse GenBank-formatted file, returning a `Vector{GenBank.Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+Parse GenBank-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
 """
 function readgbk(input)
     collect(open(GenBank.Reader, input))
+end
+
+
+"""
+    readembl(input)
+
+Parse EMBL-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+"""
+function readembl(input)
+    collect(open(EMBL.Reader, input))
 end
 
 
@@ -77,10 +87,21 @@ function readgff(input)
     collect(open(GFF.Reader, input))
 end
 
+
+"""
+    readgff(input)
+
+Parse GTF/GFF2-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+"""
+function readgtf(input)
+    collect(open(GTF.Reader, input))
+end
+
+
 """
     relative_position(gene::AbstractGene, point::Symbol = :start)
 
-Returns the relative position of `gene` on `parent(gene)`, on the interval (0,1]. The keyword `point` determines which of the `:start`, `:middle`, or `:stop` should be counted.
+Return the relative position of `gene` on `parent(gene)`, on the interval (0,1]. The keyword `point` determines which of the `:start`, `:middle`, or `:stop` should be counted.
 """
 relative_position(gene::AbstractGene, point = :start) = relative_position(parent(gene).sequence, locus(gene), point; iscomplement = iscomplement(gene))
 function relative_position(chrseq, loc::AbstractLocus, point = :start; iscomplement = false)
