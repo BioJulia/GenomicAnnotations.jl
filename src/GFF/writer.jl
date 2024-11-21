@@ -35,7 +35,7 @@ end
 function gffstring(gene::Gene)
     buf = IOBuffer()
     firstattribute = true
-    for field in names(parent(gene).genedata)
+    for field in keys(parent(gene).genedata[index(gene), :])
         field in [:source, :score, :phase] && continue
         v = parent(gene).genedata[index(gene), field]
         if !ismissing(v)
