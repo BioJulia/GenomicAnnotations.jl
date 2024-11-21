@@ -39,6 +39,19 @@ using Test
         end
     end
 
+    @testset "GTF parsing" begin
+        gff = collect(open(GFF.Reader, "example.gff"))[1]
+        open(GTF.Writer, "example.gtf") do w
+            write(w, gff)
+        end
+        gtf = readgtf("example.gtf")[1]
+        @test begin
+            gff_data = map(row -> map(x -> string(coalesce(x, "")), row), eachrow(gff.genedata))
+            gtf_data = map(row -> map(x -> string(coalesce(x, "")), row), eachrow(gtf.genedata))
+            gff_data == gtf_data
+        end
+    end
+
     @testset "Extended methods" begin
         @test length(chr.genes[1]) == length(sequence(chr.genes[1]))
         @test length(chr.sequence) == length(sequence(chr))
