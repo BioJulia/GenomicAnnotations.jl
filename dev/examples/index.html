@@ -24,10 +24,59 @@ open(GenBank.Writer, &quot;updated_genome.gbk&quot;) do w
     for chr in chrs
         write(w, chr)
     end
-end</code></pre><h2 id="Converting-between-formats"><a class="docs-heading-anchor" href="#Converting-between-formats">Converting between formats</a><a id="Converting-between-formats-1"></a><a class="docs-heading-anchor-permalink" href="#Converting-between-formats" title="Permalink"></a></h2><p>Note that GenBank and GFF3 headers do not contain the same information, thus all information in the header is lost when saving annotations as another format.</p><pre><code class="language-julia hljs">using GenomicAnnotations
+end</code></pre><h2 id="Converting-between-formats"><a class="docs-heading-anchor" href="#Converting-between-formats">Converting between formats</a><a id="Converting-between-formats-1"></a><a class="docs-heading-anchor-permalink" href="#Converting-between-formats" title="Permalink"></a></h2><p>Annotations can be read from one file format and written as another. Converting between the supported human-readable formats (GenBank and EMBL) or the tab-delimited formats (GFF3 and GTF) will likely work out of the box, but converting from a human-readable format to a tab-delimited format, or vice versa, may need some human intervention. Currently, GenomicAnnotations does not make any attempt to rename columns or perform any sanity checks to ensure that the resulting file meets specifications. Refer to the respective format specifications for details on what attributes need to be included, etc. Notably, GenBank and GFF3 headers do not contain the same information, and GTF files lack a header altogether, thus all information in the header is lost when saving annotations as another format. GTF files also do not allow the inclusion of sequence data, unlike GFF3. Below is a simple example script that demonstrates some of the changes that need to be made. If your use-case includes more complex features, such as multi-exon genes, you will likely need to make more changes as part of the convertion.</p><pre><code class="language-julia hljs">using GenomicAnnotations
+using DataFrames
 chrs = readgbk(&quot;genome.gbk&quot;)
 open(GFF.Writer, &quot;genome.gff&quot;) do w
     for chr in chrs
+        # GenBank features often contain features that are not usually included
+        # in GFF3 files, so let&#39;s remove some:
+        cols_to_remove = intersect([&quot;translation&quot;, &quot;mol_type&quot;, &quot;organism&quot;], names(chr.genedata))
+        if !isempty(cols_to_remove)
+            chr.genedata = chr.genedata[:, Not(cols_to_remove)]
+        end
+        # The GenBank format uses the :source feature to store metadata about
+        # the record, but in GFF3, :source is the name of the column which
+        # contains the sequence name. Thus, we need to change the GenBank
+        # :source to the GFF3 equivalent :region. According to the GenBank
+        # specification, :source is mandatory, but it&#39;s best to be safe and
+        # check that it&#39;s really there:
+        source_entries = @genes(chr, source)
+        if !isempty(source_entries)
+            for source in source_entries
+                region = feature!(source, :region)
+                region.Name = chr.name
+                region.ID = chr.name
+                # GenBank files include information about circularity of a
+                # contig in its header, but in the GFF3 format this
+                # information is encoded in the &quot;Is_circular&quot; attribute of
+                # the first :region feature:
+                if occursin(&quot;circular&quot;, chr.header)
+                    region.Is_circular = true
+                end
+            end
+        else
+            # If the :source feature is missing, we&#39;ll have to create a :region
+            # from scratch:
+            addgene!(chr, &quot;region&quot;, 1:length(chr.sequence);
+                Name = chr.name,
+                ID = chr.name,
+                Is_circular = occursin(&quot;circular&quot;, chr.header))
+            sort!(chr.genes)
+        end
+        # Most features, such as :CDS or :tRNA, have a corresponding :gene
+        # that it belongs to. In GFF3, this hierarchical relationship is shown
+        # using the &quot;ID&quot; and &quot;Parent&quot; attributes. Here, we set the &quot;ID&quot;
+        # attribute of all :gene features to match their &quot;locus_tag&quot;, and then
+        # set the &quot;Parent&quot; attributes of all non-:gene features to match the
+        # &quot;ID&quot; of their respective :gene, if there is one:
+        gene_features = @genes(chr, gene)
+        gene_features.ID .= gene_features.locus_tag
+        for gene in @genes(chr, !gene)
+            if get(gene, :locus_tag, &quot;missing&quot;) in skipmissing(gene_features.locus_tag)
+                gene.Parent = gene.locus_tag
+            end
+        end
         write(w, chr)
     end
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../genes/">« Filtering: the @genes macro</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Monday 18 November 2024 09:20">Monday 18 November 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../genes/">« Filtering: the @genes macro</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Thursday 21 November 2024 15:59">Thursday 21 November 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
