@@ -32,7 +32,7 @@ function Base.setproperty!(gene::G, name::Symbol, x::T) where {G <: AbstractGene
     if hasproperty(parent(gene).genedata, name)
         parent(gene).genedata[index(gene), name] = x
     else
-        s = size(parent(gene).genedata, 1)
+        s = isempty(parent(gene).genedata) ? length(parent(gene).genes) : size(parent(gene).genedata, 1)
         parent(gene).genedata[!, name] = Vector{Union{Missing, T}}(missing, s)
         parent(gene).genedata[index(gene), name] = x
     end
