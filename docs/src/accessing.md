@@ -7,7 +7,7 @@ locus
 locus!
 feature
 feature!
-parent
+parent(::Gene)
 genedata
 attributes
 ```
