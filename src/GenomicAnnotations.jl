@@ -7,7 +7,7 @@ using BioSequences
 
 export GenBank, GFF, GTF, EMBL
 export Gene, AbstractGene, GeneDataView
-export sequence, iscomplement, iscomplete, ismultilocus, addgene!, pushproperty!
+export sequence, iscomplement, iscomplete, iscompound, addgene!, pushproperty!
 export feature, feature!, index, locus, locus!, position, attributes, genedata
 
 export AbstractLocus

@@ -148,13 +148,13 @@ using Test
         @test sequence(chr.sequence, Locus("join(complement(1..3),complement(11..13))")) == dna"ttttat"
         @test sequence(chr.sequence, Locus("order(complement(1..3),complement(11..13))")) == [dna"ttt", dna"tat"]
 
-        @test ismultilocus(Locus("join(1..3,7..9)")) == true
-        @test ismultilocus(Locus("order(1..3,7..9)")) == true
-        @test ismultilocus(Locus("complement(join(1..3,7..9))")) == true
-        @test ismultilocus(Locus("join(complement(1..3),complement(7..9))")) == true
-        @test ismultilocus(Locus("1..10")) == false
-        @test ismultilocus(Locus("<1..>10")) == false
-        @test ismultilocus(Locus("1^2")) == false
+        @test iscompound(Locus("join(1..3,7..9)")) == true
+        @test iscompound(Locus("order(1..3,7..9)")) == true
+        @test iscompound(Locus("complement(join(1..3,7..9))")) == true
+        @test iscompound(Locus("join(complement(1..3),complement(7..9))")) == true
+        @test iscompound(Locus("1..10")) == false
+        @test iscompound(Locus("<1..>10")) == false
+        @test iscompound(Locus("1^2")) == false
     end
 
     seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"

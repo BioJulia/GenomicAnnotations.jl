@@ -55,7 +55,7 @@ function gffstring(gene::Gene)
             end
         end
     end
-    if ismultilocus(gene)
+    if iscompound(gene)
         s = String(take!(buf))
         res = IOBuffer()
         for loc in locus(gene)

@@ -360,15 +360,15 @@ iscomplete(loci::Join) = all(iscomplete, loci.loc)
 iscomplete(loci::Order) = all(iscomplete, loci.loc)
 
 """
-    ismultilocus(gene::AbstractGene)
-    ismultilocus(loc::AbstractLocus)
+    iscompound(gene::AbstractGene)
+    iscompound(loc::AbstractLocus)
 
 Return `true` if `loc` is a `Join`, `Order`, or either wrapping in `Complement`.
 """
-ismultilocus(gene::AbstractGene) = ismultilocus(locus(gene))
-ismultilocus(locus::Union{SpanLocus, PointLocus}) = false
-ismultilocus(locus::Union{Join, Order}) = true
-ismultilocus(locus::Complement{T}) where T <: AbstractLocus = ismultilocus(locus.loc)
+iscompound(gene::AbstractGene) = iscompound(locus(gene))
+iscompound(locus::Union{SpanLocus, PointLocus}) = false
+iscompound(locus::Union{Join, Order}) = true
+iscompound(locus::Complement{T}) where T <: AbstractLocus = iscompound(locus.loc)
 
 function appendstring(field, v::Bool)
     return "\n" * join(fill(' ', 21)) * "/$field"
