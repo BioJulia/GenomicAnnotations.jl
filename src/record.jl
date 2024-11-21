@@ -321,6 +321,11 @@ Base.length(locus::Union{Join, Order}) = sum(map(length, locus.loc))
 Base.length(locus::Complement) = length(locus.loc)
 
 
+"""
+    sequence(record::Record)
+
+Return the nucleotide sequence of `record`.
+"""
 function sequence(record::Record)
     record.sequence
 end
@@ -475,7 +480,7 @@ Base.IteratorSize(loc::AbstractLocus) = Base.SizeUnknown()
 """
     eachposition(loc::AbstractLocus)
 
-Returns an object that iterates over each position in the locus in the specified order. Returns `nothing` for `PointLocus{BetweenNucleotides}`.
+Return an object that iterates over each position in the locus in the specified order. Returns `nothing` for `PointLocus{BetweenNucleotides}`.
 
 ```julia
 julia> eachposition(Locus("join(1..3,complement(7..9))"))
@@ -488,14 +493,79 @@ eachposition(loc::Union{Join, Order}) = Iterators.flatten(map(eachposition, loc.
 eachposition(loc::Complement{T}) where {T <: Union{PointLocus, SpanLocus}} = Iterators.reverse(loc.position)
 eachposition(loc::Complement) = Iterators.reverse(eachposition(loc.loc))
 
+"""
+    index(g::Gene)
+
+Return the index of `g`, i.e. its row number in `parent(g).genedata`.
+"""
 index(g::Gene) = getfield(g, :index)
+
+"""
+    locus(g::Gene)
+
+Return the `AbstractLocus` of `g`.
+"""
 locus(g::Gene) = getfield(g, :locus)
 Base.position(g::Gene) = getfield(g, :locus).position
+
+"""
+    feature(g::Gene)
+
+Return the feature type (i.e. gene, CDS, tRNA, etc.) of `g`.
+"""
 feature(g::Gene) = getfield(g, :feature)
+
+"""
+    parent(g::Gene)
+    parent(gs::AbstractVector{Gene})
+
+Return the parent `Record` of `g`. Errors for `AbstractVector{Gene}`s if the genes do not come from the same parent.
+"""
 Base.parent(g::Gene) = getfield(g, :parent)
 function Base.parent(gs::AbstractVector{G}) where {G <: AbstractGene}
+    @assert length(unique(map(parent, gs))) == 1 "Trying to get parent of a Vector{Gene} with genes from multiple `Record`s."
     @assert !isempty(gs) "Trying to get parent of empty Array{Gene}"
     getfield(gs[1], :parent)
+end
+
+"""
+    genedata(g::Gene)
+
+Return the `DataFrameRow` where the data for `g` is stored. See [`attributes`](@ref) for a slower but potentially more convenient alternative.
+"""
+genedata(g::Gene) = parent(g).genedata[index(g), :]
+
+"""
+    attributes(g::Gene)
+
+Return an immutable NamedTuple containing copies of all annotated attributes of `g`. Missing attributes are excluded. See [`genedata`](@ref) for a non-allocating way to access the gene data directly.
+"""
+attributes(g::Gene) = (; filter(kw -> !ismissing(kw[2]), collect(pairs(genedata(g))))...)
+
+"""
+    feature!(g::Gene, f::Symbol)
+
+Change the feature of `g` to `f`, returning a new instance of `Gene`. Since `Gene`s are immutable, `feature!` only mutates the parent of `g` and not `g` itself. Thus, in the first example below the original unmodified `g` is printed, not the updated version:
+
+```julia
+# This will not work as expected:
+for source in @genes(chr, source)
+    feature!(source, :region)
+    println(source)
+end
+
+# But this will:
+for source in @genes(chr, source)
+    source = feature!(source, :region)
+    println(source)
+```
+"""
+function feature!(g::Gene, f::Symbol)
+    if f == feature(g)
+        return g
+    else
+        parent(g).genes[index(g)] = Gene(parent(g), index(g), locus(g), f)
+    end
 end
 
 
