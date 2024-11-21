@@ -24,7 +24,7 @@ sort!(chr)
 
 Existing features can be removed using `delete!`:
 ```@docs
-delete!(::Gene)
+delete!(::AbstractGene)
 delete!(::AbstractVector{Gene})
 ```
 
