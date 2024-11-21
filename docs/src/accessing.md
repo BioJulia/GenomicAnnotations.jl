@@ -1,6 +1,17 @@
 # Accessing and modifying annotations
 
-## Feature
+## Features
+The following functions can be used to read and modify the data associated with a gene:
+```@docs
+locus
+locus!
+feature
+feature!
+parent
+genedata
+attributes
+```
+
 Features (genes) can be added using `addgene!`. A feature must have a feature name and a locus (position), and can have any number of additional qualifiers associated with it (see next section).
 ```@docs
 addgene!
@@ -18,7 +29,7 @@ delete!(::AbstractVector{Gene})
 ```
 
 ## Qualifiers
-Features can have multiple qualifiers, which can be modified using Julia's property syntax:
+Features can have multiple attributes/qualifiers, which can be modified using Julia's property syntax:
 ```julia
 # Remove newspace from gene product descriptions
 for gene in @genes(chr, CDS)

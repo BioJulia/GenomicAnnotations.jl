@@ -2,7 +2,7 @@
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://BioJulia.github.io/GenomicAnnotations.jl/dev)
 
 ## Description
-GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank and GFF3 file formats.
+GenomicAnnotations is a package for reading, modifying, and writing genomic annotations in the GenBank, GFF3, GFF2/GTF, and EMBL file formats. 
 
 ## Installation
 ```julia
