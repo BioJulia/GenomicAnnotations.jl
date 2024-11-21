@@ -213,7 +213,7 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
     iobuffer = IOBuffer()
     while !eof(stream)
         line = readuntil(stream, UInt8('\n'), keep = true)
-        if line == codeunits("//\n")
+        if length(line) >= 2 && line[1:2] == codeunits("//")
             break
         end
         write(iobuffer, line)
