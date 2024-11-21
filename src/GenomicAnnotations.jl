@@ -5,10 +5,10 @@ using BioGenerics
 using DataFrames
 using BioSequences
 
-export GenBank, GFF, EMBL
+export GenBank, GFF, GTF, EMBL
 export Gene, AbstractGene, GeneDataView
 export sequence, iscomplement, iscomplete, ismultilocus, addgene!, pushproperty!
-export feature, index, locus, locus!, position
+export feature, feature!, index, locus, locus!, position, attributes, genedata
 
 export AbstractLocus
 export SpanLocus, ClosedSpan, OpenSpan, OpenRightSpan, OpenLeftSpan
@@ -20,7 +20,7 @@ export eachposition
 export relative_position
 
 export @genes, upstream, downstream, neighbours
-export readgbk, readgff
+export readgbk, readgff, readgtf, readembl
 export reorder, reorder!
 
 include("record.jl")
@@ -35,5 +35,7 @@ include("GFF/GFF.jl")
 import .GFF
 include("EMBL/EMBL.jl")
 import .EMBL
+include("GTF/GTF.jl")
+import .GTF
 
 end #module
