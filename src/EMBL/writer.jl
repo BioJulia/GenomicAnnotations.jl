@@ -31,6 +31,12 @@ function Base.write(writer::Writer, record::Record, header = Dict())
     printembl(writer.output, record, header)
 end
 
+function Base.write(writer::Writer, records::AbstractVector{Record}, header = Dict())
+    for record in records
+        printembl(writer.output, record, header)
+    end
+end
+
 """
     printgbk(io::IO, chr)
     printgbk(path::AbstractString, chr)

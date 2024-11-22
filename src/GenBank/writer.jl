@@ -31,6 +31,12 @@ function Base.write(writer::Writer, record::Record)
     printgbk(writer.output, record)
 end
 
+function Base.write(writer::Writer, records::AbstractVector{Record})
+    for record in records
+        printgbk(writer.output, record)
+    end
+end
+
 """
     printgbk(io::IO, chr)
     printgbk(path::AbstractString, chr)

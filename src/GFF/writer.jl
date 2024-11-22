@@ -31,6 +31,12 @@ function Base.write(writer::Writer, record::Record)
     printgff(writer.output, record)
 end
 
+function Base.write(writer::Writer, records::AbstractVector{Record})
+    for record in records
+        printgff(writer.output, record)
+    end
+end
+
 
 function gffstring(gene::Gene)
     buf = IOBuffer()
