@@ -73,8 +73,8 @@ function printgbk(io::IO, chr::C) where {C <: Record}
 end
 
 
-function formatsequence(sequence, io = IOBuffer)
-    p = length(string(length(sequence))) + 2
+function formatsequence(sequence, io)
+    p = 9
     if length(sequence) > 60
         intervals = [i:i+60 for i in range(1; step = 60, stop = length(sequence)-60)]
         for interval in intervals
