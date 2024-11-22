@@ -17,10 +17,7 @@ Features (genes) can be added using `addgene!`. A feature must have a feature na
 addgene!
 ```
 
-After adding a new feature, `sort!` can be used to make sure that the annotations are stored (and printed) in the order in which they occur on the chromosome:
-```julia
-sort!(chr)
-```
+After adding a new feature, `sort!(chr)` can be used to make sure that the annotations are stored (and printed) in the order in which they occur on the chromosome.
 
 Existing features can be removed using `delete!`:
 ```@docs
