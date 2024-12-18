@@ -67,6 +67,13 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
         if length(line) == 0
             continue
         end
+        if line[1] == '#' && line != "##FASTA"
+            isheader = true
+            println(header, line)
+            continue
+        else
+            isheader = false
+        end
         (seqid, source, feature, sstart, send, score, strand, phase, attributes) = split(line, '\t')
         if isempty(record.name)
             record.header = String(take!(header))
@@ -108,7 +115,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
             end
         end
     end
-    record.header = ""
+    record.header = String(take!(header))
     if isempty(record.name)
         return nothing
     else
