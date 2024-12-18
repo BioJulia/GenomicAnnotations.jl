@@ -80,7 +80,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
             record.name = seqid
         elseif seqid != record.name
             ### The following contig lacks a header
-            TranscodingStreams.unread(input, UInt8.(c for c in line))
+            TranscodingStreams.unread(input, UInt8.(c for c in "$line\n"))
             return record
         end
         loc = if strand == "+"

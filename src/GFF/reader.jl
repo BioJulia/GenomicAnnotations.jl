@@ -83,7 +83,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
                 record.name = seqid
             elseif seqid != record.name
                 ### The following contig lacks a header
-                TranscodingStreams.unread(input, UInt8.(c for c in line))
+                TranscodingStreams.unread(input, UInt8.(c for c in "$line\n"))
                 return record
             end
             loc = if strand == "+"
@@ -132,7 +132,7 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
     if !isempty(currentfasta)
         record.sequence = LongDNA{4}(String(take!(iobuffer)))
     end
-    record.header = headerstring = String(take!(header))
+    record.header = String(take!(header))
     if isempty(record.name)
         return nothing
     else
