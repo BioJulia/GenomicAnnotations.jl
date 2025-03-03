@@ -97,7 +97,7 @@ Print `chr` in GFF3 format.
 """
 printgff(filepath::AbstractString, chrs) = printgff(open(filepath, "w"), chrs)
 printgff(io::IO, chr::Record) = printgff(io, [chr])
-function printgff(io::IO, chrs::AbstractVector{Record{G}}) where G <: AbstractGene
+function printgff(io::IO, chrs::AbstractVector{<:Record})
     iobuffer = IOBuffer()
     ### Header
     if occursin(r"^##gff-version 3", chrs[1].header)

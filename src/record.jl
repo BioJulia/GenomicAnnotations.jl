@@ -87,18 +87,20 @@ Contains five fields: `name`, `sequence`, `header`, `genes`, and `genedata`.
 Annotations are stored as a `DataFrame` in `genedata`, but can be accessed
 more easily through `genes` using the API provided in this module.
 """
-mutable struct Record{G <: AbstractGene}
+mutable struct Record{G <: AbstractGene, S <: BioSequences.Alphabet}
     name::String
-    sequence::LongDNA{4}
+    sequence::LongSequence{S}
     header::String
     genes::Vector{G}
     genedata::DataFrame
     circular::Bool
-    Record{G}(name, sequence, header, genes::Vector{G}, genedata, circular) where G = new(name, sequence, header, genes, genedata, circular)
+    Record{G, S}(name, sequence::LongSequence{S}, header, genes::Vector{G}, genedata, circular) where {G, S} = new(name, sequence, header, genes, genedata, circular)
 end
 
 
-Record(args...) = Record{Gene}(args...)
+Record() = Record{Gene, DNAAlphabet{4}}()
+# Record{S}(args...) where S<:BioSequences.Alphabet = Record{Gene, S}(args...)
+Record(name, sequence::LongSequence{S}, header, genes::Vector{G}, genedata, circular) where {G, S} = Record{G, S}(name, sequence, header, genes, genedata, circular)
 
 
 struct Gene <: AbstractGene
@@ -109,10 +111,13 @@ struct Gene <: AbstractGene
 end
 
 
+Record{G,S}() where {G,S} = Record{G,S}("", LongSequence{S}(), "", G[], DataFrame(), false)
 Record{Gene}() = Record{Gene}("", dna"", "", Gene[], DataFrame(), false)
+# Record{G}(args...) where G<:AbstractGene = Record{Gene}(args...)
 
 
-iscircular(c::Record{T}) where {T<:AbstractGene} = c.circular
+iscircular(c::Record{T,S}) where {T,S<:BioSequences.AminoAcidAlphabet} = false
+iscircular(c::Record{T,S}) where {T,S} = c.circular
 
 
 """
@@ -294,7 +299,8 @@ Return genomic sequence for `gene`. If `translate` is `true`, the sequence will 
 ```
 """
 sequence(gene::AbstractGene; kw...) = sequence(parent(gene).sequence, locus(gene); kw...)
-function sequence(chrseq, loc::AbstractLocus; translate = false, preserve_alternate_start = false)
+sequence(aaseq::AASeq, loc; kw...) = _sequence(aaseq, loc)
+function sequence(chrseq::NucSeq, loc::AbstractLocus; translate = false, preserve_alternate_start = false)
     seq = _sequence(chrseq, loc)
     if translate
         if preserve_alternate_start

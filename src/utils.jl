@@ -63,8 +63,9 @@ end
 
 Parse GenBank-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
 """
-function readgbk(input)
-    collect(open(GenBank.Reader, input))
+readgbk(input) = readgbk(input, DNAAlphabet{4})
+function readgbk(input, ::Type{S}) where S
+    collect(open(GenBank.Reader{S}, input))
 end
 
 
@@ -83,8 +84,9 @@ end
 
 Parse GFF3-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
 """
-function readgff(input)
-    collect(open(GFF.Reader, input))
+readgff(input) = readgff(input, DNAAlphabet{4})
+function readgff(input, ::Type{S}) where S
+    collect(open(GFF.Reader{S}, input))
 end
 
 
@@ -115,5 +117,59 @@ function relative_position(chrseq, loc::AbstractLocus, point = :start; iscomplem
         return mod1(atan((sinpi(2p1) + sinpi(2p2)) / 2, (cospi(2p1) + cospi(2p2)) / 2) / 2π, 1)
     else
         error("`point` must be one of `:start`, `:middle`, or `:stop`")
+    end
+end
+
+
+abstract type FileFormat end
+abstract type GenBankFormat <: FileFormat end
+abstract type EMBLFormat <: FileFormat end
+abstract type GFFFormat <: FileFormat end
+abstract type GTFFormat <: FileFormat end
+
+struct Reader{F<:FileFormat, S<:BioSequences.Alphabet, T<:TranscodingStream} <: BioGenerics.IO.AbstractReader
+    io::T
+    s::Type{S}
+    f::Type{F}
+    Reader{F,S,T}(io::T, ::Type{S}, ::Type{F}) where {F,S,T} = new(io, S, F)
+end
+Reader(io::T, ::Type{S}, ::Type{F}) where {T<:TranscodingStream, S<:BioSequences.Alphabet, F<:FileFormat} = Reader{F,S,T}(io, S, F)
+
+"""
+    GenBank.Reader(input::IO, S::Type{BioSequences.Alphabet})
+    GFF.Reader(input::IO, S::Type{BioSequences.Alphabet})
+    GTF.Reader(input::IO, S::Type{BioSequences.Alphabet})
+    EMBL.Reader(input::IO, S::Type{BioSequences.Alphabet})
+
+Create a data reader of the specified file format.
+
+```julia
+open(GenBank.Reader, "test/example.gbk") do records
+    for record in record
+        print(record)
+    end
+end
+```
+"""
+Reader(input::IO, ::Type{F}) where {F<:FileFormat} = Reader(input, DNAAlphabet{4}, F)
+function Reader(input::IO, ::Type{S}, ::Type{F}) where {S, F}
+    if input isa TranscodingStream
+        Reader(input, S, F)
+    else
+        stream = TranscodingStreams.NoopStream(input)
+        Reader(stream, S, F)
+    end
+end
+
+Base.eltype(::Type{Reader{<:FileFormat, S, <:TranscodingStream}}) where S = Record{Gene, S}
+Base.close(reader::Reader) = close(reader.io)
+BioGenerics.IO.stream(reader::Reader) = reader.io
+
+Base.open(::Type{Reader{F}}, input::AbstractString) where F<:FileFormat = open(Reader{F, DNAAlphabet{4}}, input)
+function Base.open(::Type{Reader{F,S}}, input::AbstractString) where {S<:BioSequences.Alphabet, F<:FileFormat}
+    if input[end-2:end] == ".gz"
+        return Reader(GzipDecompressorStream(open(input)), S, F)
+    else
+        return Reader(TranscodingStreams.NoopStream(open(input)), S, F)
     end
 end

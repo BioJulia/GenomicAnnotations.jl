@@ -1,53 +1,16 @@
 # EMBL Reader
 
-struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
-    io::S
-end
+Reader = GenomicAnnotations.Reader{EMBLFormat, <:BioSequences.Alphabet, <:TranscodingStream}
 
-"""
-    EMBL.Reader(input::IO)
-
-Create a data reader of the EMBL file format.
-"""
-function Reader(input::IO)
-    if input isa TranscodingStream
-        Reader(input)
-    else
-        stream = TranscodingStreams.NoopStream(input)
-        Reader(stream)
-    end
-end
-
-function Base.eltype(::Type{<:Reader})
-    return Record
-end
-
-function Base.close(reader::Reader)
-    close(reader.io)
-end
-
-function Base.open(::Type{<:Reader}, input::AbstractString)
-    if input[end-2:end] == ".gz"
-        return Reader(GzipDecompressorStream(open(input)))
-    else
-        return Reader(TranscodingStreams.NoopStream(open(input)))
-    end
-end
-
-function BioGenerics.IO.stream(reader::Reader)
-    reader.io
-end
-
-function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader{S}, nextone = Record{Gene,S}()) where S
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
-    return nextone, Record()
+    return nextone, Record{Gene,S}()
 end
 
-function BioGenerics.IO.tryread!(reader::Reader, output)
-    record = parsechromosome!(reader.io, output)
-    return record
+function BioGenerics.IO.tryread!(reader::Reader, output) 
+    parsechromosome!(reader.io, output)
 end
 
 """

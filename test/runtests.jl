@@ -25,6 +25,20 @@ using Test
         end
     end
 
+    @testset "Sequence types" begin
+        @test open(GenBank.Reader{DNAAlphabet{4}}, "example.gbk") do records
+            first(records).sequence isa LongSequence{DNAAlphabet{4}}
+        end
+        @test open(GenBank.Reader{DNAAlphabet{2}}, "example.gbk") do records
+            first(records).sequence isa LongSequence{DNAAlphabet{2}}
+        end
+        @test begin
+            r = collect(open(GFF.Reader{AminoAcidAlphabet}, "protein.gff"))
+            first(r).sequence isa LongSequence{AminoAcidAlphabet}
+            sequence(first(r).genes[4]) == aa"MGSNKSK"
+        end
+    end
+
     @testset "EMBL parsing" begin
         open(EMBL.Writer, "example.embl") do w
             write(w, chr)

@@ -1,61 +1,16 @@
 # GenBank Reader
 
-struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
-    io::S
-end
+Reader = GenomicAnnotations.Reader{GenBankFormat, <:BioSequences.Alphabet, <:TranscodingStream}
 
-"""
-    GenBank.Reader(input::IO)
-
-Create a data reader of the GenBank file format.
-
-```julia
-open(GenBank.Reader, "test/example.gbk") do records
-    for record in record
-        print(record)
-    end
-end
-```
-"""
-function Reader(input::IO)
-    if input isa TranscodingStream
-        Reader(input)
-    else
-        stream = TranscodingStreams.NoopStream(input)
-        Reader(stream)
-    end
-end
-
-function Base.eltype(::Type{<:Reader})
-    return Record
-end
-
-function Base.close(reader::Reader)
-    close(reader.io)
-end
-
-function Base.open(::Type{<:Reader}, input::AbstractString)
-    if input[end-2:end] == ".gz"
-        return Reader(GzipDecompressorStream(open(input)))
-    else
-        return Reader(TranscodingStreams.NoopStream(open(input)))
-    end
-end
-
-function BioGenerics.IO.stream(reader::Reader)
-    reader.io
-end
-
-function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader{S}, nextone = Record{Gene,S}()) where S
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
-    return nextone, Record()
+    return nextone, Record{Gene,S}()
 end
 
 function BioGenerics.IO.tryread!(reader::Reader, output)
-    record = parsechromosome!(reader.io, output)
-    return record
+    parsechromosome!(reader.io, output)
 end
 
 """
@@ -161,7 +116,7 @@ end
 
 Parse and return one chromosome entry.
 """
-function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
+function parsechromosome!(stream::IO, record::Record{G, S}) where {G, S}
     eof(stream) && return nothing
     iobuffer = IOBuffer()
     feature = :source
@@ -219,6 +174,6 @@ function parsechromosome!(stream::IO, record::Record{G}) where G <: AbstractGene
         write(iobuffer, line)
     end
     record.name = parseheader(record.header)
-    record.sequence = LongDNA{4}(filterseq(iobuffer))
+    record.sequence = LongSequence{S}(filterseq(iobuffer))
     return record
 end

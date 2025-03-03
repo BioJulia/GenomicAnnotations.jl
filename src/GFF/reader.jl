@@ -1,55 +1,19 @@
 # GFF3 Reader
 
-struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
-    io::S
-end
+Reader = GenomicAnnotations.Reader{GFFFormat, <:BioSequences.Alphabet, <:TranscodingStream}
 
-"""
-    GFF.Reader(input::IO)
-
-Create a data reader of the GFF3 file format.
-"""
-function Reader(input::IO)
-    if input isa TranscodingStream
-        Reader(input)
-    else
-        stream = TranscodingStreams.NoopStream(input)
-        Reader(stream)
-    end
-end
-
-function Base.eltype(::Type{<:Reader})
-    return Record
-end
-
-function Base.close(reader::Reader)
-    close(reader.io)
-end
-
-function Base.open(::Type{<:Reader}, input::AbstractString)
-    if input[end-2:end] == ".gz"
-        return Reader(GzipDecompressorStream(open(input)))
-    else
-        return Reader(TranscodingStreams.NoopStream(open(input)))
-    end
-end
-
-function BioGenerics.IO.stream(reader::Reader)
-    reader.io
-end
-
-function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader{S}, nextone = Record{Gene,S}()) where S
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
-    return nextone, Record()
+    return nextone, Record{Gene,S}()
 end
 
 function BioGenerics.IO.tryread!(reader::Reader, output)
     parsechromosome!(reader.io, output)
 end
 
-function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
+function parsechromosome!(input, record::Record{<:AbstractGene, S}) where S
     record.genedata[!, :source] = Union{Missing, String}[]
     record.genedata[!, :score] = Union{Missing, Float64}[]
     record.genedata[!, :phase] = Union{Missing, Int}[]
@@ -86,7 +50,9 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
                 TranscodingStreams.unread(input, UInt8.(c for c in "$line\n"))
                 return record
             end
-            loc = if strand == "+"
+            loc = if S === AminoAcidAlphabet
+                loc = SpanLocus(parse(Int, sstart):parse(Int, send), ClosedSpan)
+            elseif strand == "+"
                 SpanLocus(parse(Int, sstart):parse(Int, send), ClosedSpan)
             else
                 Complement(SpanLocus(parse(Int, sstart):parse(Int, send), ClosedSpan))
@@ -120,17 +86,17 @@ function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
             if line[1] == '>'
                 currentfasta = line[2:end]
                 seq = String(take!(iobuffer))
-                record.sequence = LongDNA{4}(seq)
+                record.sequence = LongSequence{S}(seq)
             else
-                if line[1] ∉ ['A', 'T', 'G', 'C']
-                    println(line)
-                end
+                # if line[1] ∉ ['A', 'T', 'G', 'C']
+                #     println(line)
+                # end
                 print(iobuffer, line)
             end
         end
     end
     if !isempty(currentfasta)
-        record.sequence = LongDNA{4}(String(take!(iobuffer)))
+        record.sequence = LongSequence{S}(String(take!(iobuffer)))
     end
     record.header = String(take!(header))
     if isempty(record.name)

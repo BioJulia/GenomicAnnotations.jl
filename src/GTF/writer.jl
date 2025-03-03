@@ -96,7 +96,7 @@ Print `chr` in GTF/GFF2 format.
 """
 printgtf(filepath::AbstractString, chrs) = printgtf(open(filepath, "w"), chrs)
 printgtf(io::IO, chr::Record) = printgtf(io, [chr])
-function printgtf(io::IO, chrs::AbstractVector{Record{G}}) where G <: AbstractGene
+function printgtf(io::IO, chrs::AbstractVector{<:Record})
     iobuffer = IOBuffer()
     ### GTF files do not have a header
     ### Body

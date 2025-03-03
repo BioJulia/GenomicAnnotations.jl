@@ -6,7 +6,8 @@ using BioGenerics
 using DataFrames
 using CodecZlib
 
-import ..GenomicAnnotations: Record, Gene, AbstractGene, GeneDataView, Locus
+using ..GenomicAnnotations
+import ..GenomicAnnotations: Record, Gene, AbstractGene, GeneDataView, Locus, EMBLFormat
 import ..GenomicAnnotations: sequence, iscomplement, iscomplete, addgene!, pushproperty!, feature, index, locus, oneline, multiline
 export sequence, iscomplement, iscomplete, feature, index, locus
 

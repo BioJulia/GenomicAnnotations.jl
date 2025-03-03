@@ -1,55 +1,19 @@
 # GTF/GFF2 Reader
 
-struct Reader{S <: TranscodingStream} <: BioGenerics.IO.AbstractReader
-    io::S
-end
+Reader = GenomicAnnotations.Reader{GTFFormat, <:BioSequences.Alphabet, <:TranscodingStream}
 
-"""
-    GTF.Reader(input::IO)
-
-Create a data reader of the GTF/GFF2 file format.
-"""
-function Reader(input::IO)
-    if input isa TranscodingStream
-        Reader(input)
-    else
-        stream = TranscodingStreams.NoopStream(input)
-        Reader(stream)
-    end
-end
-
-function Base.eltype(::Type{<:Reader})
-    return Record
-end
-
-function Base.close(reader::Reader)
-    close(reader.io)
-end
-
-function Base.open(::Type{<:Reader}, input::AbstractString)
-    if input[end-2:end] == ".gz"
-        return Reader(GzipDecompressorStream(open(input)))
-    else
-        return Reader(TranscodingStreams.NoopStream(open(input)))
-    end
-end
-
-function BioGenerics.IO.stream(reader::Reader)
-    reader.io
-end
-
-function Base.iterate(reader::Reader, nextone::Record = Record())
+function Base.iterate(reader::Reader{S}, nextone = Record{Gene,S}()) where S
     if BioGenerics.IO.tryread!(reader, nextone) === nothing
         return nothing
     end
-    return nextone, Record()
+    return nextone, Record{Gene,S}()
 end
 
-function BioGenerics.IO.tryread!(reader::Reader, output)
+function BioGenerics.IO.tryread!(reader::Reader{S}, output) where S
     parsechromosome!(reader.io, output)
 end
 
-function parsechromosome!(input, record::Record{G}) where G <: AbstractGene
+function parsechromosome!(input, record::Record)
     record.genedata[!, :source] = Union{Missing, String}[]
     record.genedata[!, :score] = Union{Missing, Float64}[]
     record.genedata[!, :phase] = Union{Missing, Int}[]

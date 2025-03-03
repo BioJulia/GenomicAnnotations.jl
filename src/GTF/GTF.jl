@@ -6,7 +6,8 @@ using BioGenerics
 using DataFrames
 using CodecZlib
 
-import ..GenomicAnnotations: Record, Gene, AbstractGene, GeneDataView, Locus, Join, Order
+using ..GenomicAnnotations
+import ..GenomicAnnotations: Record, Gene, AbstractGene, GeneDataView, Locus, Join, Order, GTFFormat
 import ..GenomicAnnotations: SpanLocus, ClosedSpan, Complement
 import ..GenomicAnnotations: sequence, iscomplement, iscomplete, addgene!, pushproperty!, feature, index, locus, oneline, iscompound
 export sequence, iscomplement, iscomplete, feature, index, locus
