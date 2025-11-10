@@ -80,21 +80,42 @@ end
 
 """
     readgff(input)
+    readgff(input, fasta)
 
-Parse GFF3-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+Parse GFF3-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Optionally, a FASTA file containing nucleotide sequences with matching identifiers may be supplied.
 """
-function readgff(input)
-    collect(open(GFF.Reader, input))
+readgff(input) = collect(open(GFF.Reader, input))
+function readgff(input, fasta)
+    chrs = collect(open(GFF.Reader, input))
+    open(FASTA.Reader, fasta) do records
+        for (i, record) in enumerate(records)
+            c = findfirst(chr -> chr.name == identifier(record), chrs)
+            if !isnothing(c)
+                chrs[c].sequence = FASTA.sequence(LongDNA{4}, record)
+            end
+        end
+    end
+    chrs
 end
 
 
 """
     readgff(input)
 
-Parse GTF/GFF2-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed.
+Parse GTF/GFF2-formatted file, returning a `Vector{Record}`. File names ending in ".gz" are assumed to be gzipped and are decompressed. Optionally, a FASTA file containing nucleotide sequences with matching identifiers may be supplied.
 """
-function readgtf(input)
-    collect(open(GTF.Reader, input))
+readgtf(input) = collect(open(GTF.Reader, input))
+function readgtf(input, fasta)
+    chrs = collect(open(GTF.Reader, input))
+    open(FASTA.Reader, fasta) do records
+        for (i, record) in enumerate(records)
+            c = findfirst(chr -> chr.name == identifier(record), chrs)
+            if !isnothing(c)
+                chrs[c].sequence = FASTA.sequence(LongDNA{4}, record)
+            end
+        end
+    end
+    chrs
 end
 
 
