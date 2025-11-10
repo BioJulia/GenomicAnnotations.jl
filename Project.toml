@@ -1,7 +1,7 @@
 name = "GenomicAnnotations"
 uuid = "4f8a0a0a-376d-5ac0-ab14-e88793df67f0"
 authors = ["Karl Dyrhage <karl.dyrhage@icm.uu.se>"]
-version = "0.4.5"
+version = "0.4.6"
 
 [deps]
 BioGenerics = "47718e42-2ac5-11e9-14af-e5595289c2ea"
@@ -9,6 +9,7 @@ BioSequences = "7e6ae17a-c86d-528c-b3b9-7f778a29fe59"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+FASTX = "c2308a5c-f048-11e8-3e8a-31650f418d12"
 
 [compat]
 BioGenerics = "0.1"
@@ -17,6 +18,7 @@ DataFrames = "0.20, 0.21, 0.22, 1"
 TranscodingStreams = "0.9, 0.10, 0.11"
 julia = "1"
 CodecZlib = "0.7"
+FASTX = "2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

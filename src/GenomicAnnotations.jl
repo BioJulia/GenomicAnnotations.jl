@@ -4,6 +4,7 @@ using TranscodingStreams
 using BioGenerics
 using DataFrames
 using BioSequences
+using FASTX
 
 export GenBank, GFF, GTF, EMBL
 export Gene, AbstractGene, GeneDataView
