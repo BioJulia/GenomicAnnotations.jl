@@ -73,6 +73,7 @@ using Test
             chr.genes[2].db_xref == ["GI:1293614", "GI:123"]
         end
         @test GenomicAnnotations.vectorise(Union{Missing,Int}[1,1,1]) == [[1],[1],[1]]
+        @test position(chr.genes[2]) == 3:206
     end
 
     @testset "Iteration" begin
