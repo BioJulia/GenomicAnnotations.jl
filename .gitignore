@@ -4,3 +4,4 @@ test/example.embl
 test/example.gtf
 test/test.jl
 Manifest.toml
+.vscode
