@@ -24,6 +24,7 @@ export @genes, upstream, downstream, neighbours
 export readgbk, readgff, readgtf, readembl
 export reorder, reorder!
 
+include("locus.jl")
 include("record.jl")
 include("genedataview.jl")
 include("macro.jl")
