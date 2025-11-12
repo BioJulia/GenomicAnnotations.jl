@@ -446,6 +446,12 @@ end
 
 Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (feature(g1) == "gene" && feature(g2) != "gene")) || (locus(g1) < locus(g2))
 
+
+"""
+    shift!(gene, p)
+
+Shift the position of `gene` by `p`.
+"""
 function shift!(gene, p)
     setfield!(gene, :locus, shift(locus(gene), p))
     return gene
