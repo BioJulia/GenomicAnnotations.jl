@@ -17,6 +17,7 @@ export PointLocus, SingleNucleotide, BetweenNucleotides
 export Join, Order, Complement
 export Locus
 export eachposition
+export shift, shift!
 
 export relative_position
 

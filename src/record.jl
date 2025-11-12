@@ -31,7 +31,7 @@ end
 Record(args...) = Record{Gene}(args...)
 
 
-struct Gene <: AbstractGene
+mutable struct Gene <: AbstractGene
     parent::Record{Gene}
     index::UInt
     locus::AbstractLocus
@@ -445,3 +445,8 @@ function locus!(gene::AbstractGene, loc::AbstractLocus)
 end
 
 Base.isless(g1::AbstractGene, g2::AbstractGene) = ((locus(g1) == locus(g2)) && (feature(g1) == "gene" && feature(g2) != "gene")) || (locus(g1) < locus(g2))
+
+function shift!(gene, p)
+    setfield!(gene, :locus, shift(locus(gene), p))
+    return gene
+end

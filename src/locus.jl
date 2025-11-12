@@ -76,9 +76,7 @@ Base.show(io::IO, locus::SpanLocus{OpenLeftSpan}) = print(io, string("<", locus.
 Base.show(io::IO, locus::SpanLocus{OpenRightSpan}) = print(io, string(locus.position.start, "..", ">", locus.position.stop))
 Base.show(io::IO, locus::Join) = print(io, string("join(", join(locus.loc, ","), ")"))
 Base.show(io::IO, locus::Order) = print(io, string("order(", join(locus.loc, ","), ")"))
-function Base.show(io::IO, locus::Complement)
-    print(io, "complement(", string(locus.loc), ")")
-end
+Base.show(io::IO, locus::Complement) = print(io, "complement(", string(locus.loc), ")")
 
 
 Base.:(==)(loc1::SpanLocus{ClosedSpan}, loc2::SpanLocus{ClosedSpan}) = loc1.position == loc2.position
@@ -185,6 +183,8 @@ end
 
 Shift the position of `Locus` loc by `p`.
 """
-function shift(loc, p) 
-    
-end
+shift(p::PointLocus{T}, n) where T = PointLocus(p.position + n, T)
+shift(p::SpanLocus{T}, n) where T = SpanLocus(p.position .+ n, T)
+shift(P::Join{T}, n) where T = Join(map(p -> shift(p, n), P.loc))
+shift(P::Order{T}, n) where T = Order(map(p -> shift(p, n), P.loc))
+shift(p::Complement, n) = Complement(shift(p.loc, n))

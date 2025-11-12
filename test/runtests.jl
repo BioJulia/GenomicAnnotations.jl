@@ -133,6 +133,7 @@ using Test
     end
 
     @testset "Locus" begin
+        @test Locus("1..2") == Locus("1..2")
         @test locus(chr.genes[2]) < locus(chr.genes[4])
         @test locus(chr.genes[2]) == locus(chr.genes[2])
         @test iscomplement(chr.genes[2]) == false
@@ -156,6 +157,23 @@ using Test
         @test iscompound(Locus("1..10")) == false
         @test iscompound(Locus("<1..>10")) == false
         @test iscompound(Locus("1^2")) == false
+
+        @test shift(Locus("1..3"), 1) == Locus("2..4")
+        @test shift(Locus("join(1..3,7..9)"), 1) == Locus("join(2..4,8..10)")
+        @test shift(Locus("order(1..3,7..9)"), 1) == Locus("order(2..4,8..10)")
+        @test shift(Locus("complement(join(1..3,7..9))"), 1) == Locus("complement(join(2..4,8..10))")
+        @test shift(Locus("join(complement(1..3),complement(7..9))"), 1) == Locus("join(complement(2..4),complement(8..10))")
+        @test shift(Locus("1..10"), 1) == Locus("2..11")
+        @test shift(Locus("1^2"), 1) == Locus("2^3")
+
+        @test begin
+            shift!(chr.genes[2], 1)
+            locus(chr.genes[2]) == Locus("4..207")
+        end
+        @test begin
+            shift!(chr.genes[2], -1)
+            locus(chr.genes[2]) == Locus("3..206")
+        end
     end
 
     seq = dna"atgtccatatacaacggtatctccacctcaggtttagatctcaacaacggaaccattgccgacatgagacagttaggtatcgtcgagagttacaagctaaaacgagcagtagtcagctctgcatctgaagccgctgaagttctactaagggtggataacatcatccgtgcaagaccaagaaccgccaatagacaacatatgtaa"
