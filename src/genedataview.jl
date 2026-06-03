@@ -87,7 +87,7 @@ function Base.getproperty(locus::Union{Join{T}, Order{T}}, s::Symbol) where T
     return getfield(locus, s)
 end
 
-Base.propertynames(::AbstractLocus) = (:start, :stop, :positition, :strand)
+Base.propertynames(::AbstractLocus) = (:start, :stop, :position, :strand)
 
 
 Base.size(gv::GeneDataView) = size(gv.indices)
